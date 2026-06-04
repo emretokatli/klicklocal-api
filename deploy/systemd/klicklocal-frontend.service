@@ -1,0 +1,29 @@
+# Runs the Next.js production server (npm start) as a managed service.
+# This is the robust alternative to pm2 - it auto-starts on reboot.
+#
+# Install:
+#   sudo cp deploy/systemd/klicklocal-frontend.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now klicklocal-frontend
+#   sudo systemctl status klicklocal-frontend
+#
+# Logs:  sudo journalctl -u klicklocal-frontend -f
+#
+# NOTE: confirm the node path with `which node` and fix ExecStart if needed.
+
+[Unit]
+Description=Klicklocal Next.js frontend
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/klicklocal
+Environment=NODE_ENV=production
+Environment=PORT=3000
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

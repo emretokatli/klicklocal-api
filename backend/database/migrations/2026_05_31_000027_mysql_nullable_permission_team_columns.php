@@ -1,36 +1,24 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Intentionally a no-op.
+     *
+     * `workspace_id` is part of the composite PRIMARY KEY of `model_has_roles`
+     * and `model_has_permissions`. MySQL forbids a nullable column inside a
+     * PRIMARY KEY (error 1171), so the column stays NOT NULL. Platform-scoped
+     * roles use workspace_id = 0 (App\Support\TeamContext::PLATFORM), never NULL.
+     */
     public function up(): void
     {
-        if (Schema::getConnection()->getDriverName() !== 'mysql') {
-            return;
-        }
-
-        $teamKey = config('permission.column_names.team_foreign_key', 'workspace_id');
-        $tables = config('permission.table_names');
-
-        foreach ([$tables['model_has_roles'], $tables['model_has_permissions']] as $table) {
-            DB::statement("ALTER TABLE `{$table}` MODIFY `{$teamKey}` BIGINT UNSIGNED NULL");
-        }
+        // no-op
     }
 
     public function down(): void
     {
-        if (Schema::getConnection()->getDriverName() !== 'mysql') {
-            return;
-        }
-
-        $teamKey = config('permission.column_names.team_foreign_key', 'workspace_id');
-        $tables = config('permission.table_names');
-
-        foreach ([$tables['model_has_roles'], $tables['model_has_permissions']] as $table) {
-            DB::statement("ALTER TABLE `{$table}` MODIFY `{$teamKey}` BIGINT UNSIGNED NOT NULL");
-        }
+        // no-op
     }
 };

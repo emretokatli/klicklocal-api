@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="de">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Klicklocal | KI-Copilot für Social Media</title>
+    <meta name="description"
+        content="Klicklocal ist dein KI-Copilot für Content, Planung und Antworten über Instagram, TikTok und Facebook – für kleine und mittlere Unternehmen." />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Material Symbols -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#36e0a6",
+                        "on-primary-fixed": "#04140d",
+                        "tertiary-fixed": "#e6dfff",
+                        "secondary": "#4fe3c8",
+                        "primary": "#36e0a6",
+                        "on-secondary-fixed": "#04140f",
+                        "on-tertiary-fixed": "#1a1340",
+                        "on-secondary": "#04140f",
+                        "surface-dim": "#070b0a",
+                        "on-secondary-fixed-variant": "#0a3a30",
+                        "primary-fixed-dim": "#5cead0",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#aeb9b8",
+                        "surface-bright": "#11201b",
+                        "tertiary-container": "#6a4ff0",
+                        "surface-variant": "#11201b",
+                        "on-primary": "#04140d",
+                        "error-container": "#93000a",
+                        "on-surface": "#eef3f1",
+                        "primary-container": "#2bb88a",
+                        "surface-container-lowest": "#050807",
+                        "surface": "#070b0a",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#eef3f1",
+                        "on-primary-fixed-variant": "#0a3a2a",
+                        "secondary-fixed-dim": "#4fe3c8",
+                        "secondary-container": "#2bb6e8",
+                        "outline-variant": "#1f2b27",
+                        "on-background": "#eef3f1",
+                        "primary-fixed": "#bff5e4",
+                        "outline": "#7d8a8b",
+                        "on-primary-container": "#04140d",
+                        "surface-container-highest": "#16241f",
+                        "surface-container-high": "#0d1614",
+                        "on-tertiary-container": "#e6dfff",
+                        "tertiary-fixed-dim": "#b3a6f5",
+                        "inverse-primary": "#2bb88a",
+                        "surface-container-low": "#0a0f0e",
+                        "error": "#ff8f7a",
+                        "background": "#070b0a",
+                        "on-tertiary-fixed-variant": "#3a2a8c",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#0a100e",
+                        "secondary-fixed": "#bff5ec",
+                        "on-secondary-container": "#04140f",
+                        "inverse-on-surface": "#16241f",
+                        "tertiary": "#9b8cf0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "gutter": "16px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px",
+                        "margin-desktop": "40px",
+                        "margin-mobile": "20px",
+                        "stack-sm": "8px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Sora"],
+                        "title-md": ["Sora"],
+                        "display-lg": ["Sora"],
+                        "headline-lg-mobile": ["Sora"],
+                        "headline-lg": ["Sora"],
+                        "body-lg": ["Sora"],
+                        "label-caps": ["Sora"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "title-md": ["20px", { "lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        body {
+            background-color: #070b0a;
+            color: #eef3f1;
+            overflow-x: hidden;
+        }
+
+        .liquid-bg {
+            background: radial-gradient(circle at 50% 50%, rgba(54, 224, 166, 0.16) 0%, transparent 50%),
+                radial-gradient(circle at 10% 10%, rgba(155, 140, 240, 0.12) 0%, transparent 40%);
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            filter: blur(100px);
+            animation: pulse-bg 15s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulse-bg {
+            0% {
+                transform: scale(1) translate(0, 0);
+            }
+
+            100% {
+                transform: scale(1.1) translate(2%, 2%);
+            }
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.045);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 2rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            border: 1px solid rgba(54, 224, 166, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px -10px rgba(54, 224, 166, 0.18);
+        }
+
+        .glow-pill {
+            background: linear-gradient(135deg, #4fe3c8 0%, #36e0a6 55%, #9b8cf0 100%);
+            box-shadow: 0 0 20px rgba(54, 224, 166, 0.35);
+            transition: all 0.3s ease;
+        }
+
+        .glow-pill:hover {
+            box-shadow: 0 0 30px rgba(54, 224, 166, 0.55);
+            transform: scale(1.02);
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .orb-pulse {
+            animation: pulse-orb 4s infinite ease-in-out;
+        }
+
+        @keyframes pulse-orb {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.9;
+            }
+        }
+
+        /* ─── HERO STAGGERED ENTRANCE ─── */
+        @keyframes hero-rise {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-anim {
+            opacity: 0;
+            animation: hero-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* headline words slide up + fade, staggered */
+        .hero-word {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(0.9em);
+            animation: hero-rise 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* primary CTA pulsing ring */
+        .pulse-ring {
+            position: relative;
+        }
+
+        .pulse-ring::before,
+        .pulse-ring::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 9999px;
+            border: 2px solid #36e0a6;
+            opacity: 0;
+            animation: cta-ring 2.4s ease-out infinite;
+            pointer-events: none;
+        }
+
+        .pulse-ring::after {
+            animation-delay: 1.2s;
+        }
+
+        @keyframes cta-ring {
+            0% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1.28);
+                opacity: 0;
+            }
+        }
+
+        /* mockup scale-in */
+        @keyframes hero-scale-in {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .hero-scale {
+            opacity: 0;
+            animation: hero-scale-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+        }
+
+        /* hero dashboard mockup */
+        .mockup-stage {
+            position: relative;
+            width: 100%;
+            max-width: 860px;
+        }
+
+        .mockup-main {
+            background: #0d1614;
+            border: 0.5px solid rgba(255, 255, 255, 0.14);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+            text-align: left;
+        }
+
+        .mockup-topbar {
+            background: #16241f;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .mock-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .mock-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .mock-dot.r { background: #ff5f57; }
+        .mock-dot.y { background: #febc2e; }
+        .mock-dot.g { background: #28c840; }
+
+        .mockup-topbar-title {
+            font-size: 12px;
+            color: #aeb9b8;
+            margin: 0 auto;
+        }
+
+        .mockup-body {
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 1rem;
+            min-height: 280px;
+        }
+
+        .mock-sidebar {
+            background: #16241f;
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .mock-sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.45rem 0.6rem;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #aeb9b8;
+        }
+
+        .mock-sidebar-item.active {
+            background: rgba(54, 224, 166, 0.12);
+            color: #36e0a6;
+        }
+
+        .mock-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .mock-header {
+            font-size: 13px;
+            font-weight: 700;
+            color: #eef3f1;
+            margin-bottom: 0.25rem;
+        }
+
+        .post-card {
+            background: #16241f;
+            border: 0.5px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 0.85rem 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .post-platform {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .post-platform.ig {
+            background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+        }
+
+        .post-platform.tt { background: #010101; }
+
+        .post-meta { flex: 1; min-width: 0; }
+
+        .post-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: #eef3f1;
+            margin-bottom: 4px;
+        }
+
+        .post-body {
+            font-size: 11px;
+            color: #aeb9b8;
+            line-height: 1.5;
+        }
+
+        .post-chips {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .post-chip {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 100px;
+            background: rgba(255, 255, 255, 0.07);
+            color: #aeb9b8;
+            border: 0.5px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .post-chip.green {
+            background: rgba(54, 224, 166, 0.1);
+            color: #36e0a6;
+            border-color: rgba(54, 224, 166, 0.25);
+        }
+
+        .mock-ai-row {
+            background: rgba(54, 224, 166, 0.06);
+            border: 0.5px solid rgba(54, 224, 166, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .ai-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #36e0a6;
+            animation: ai-blink 1.8s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes ai-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .ai-text {
+            font-size: 12px;
+            color: rgba(54, 224, 166, 0.8);
+        }
+
+        .ai-text strong { color: #36e0a6; }
+
+        .float-card {
+            position: absolute;
+            background: #0d1614;
+            border: 0.5px solid rgba(255, 255, 255, 0.14);
+            border-radius: 14px;
+            padding: 0.85rem 1rem;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+            z-index: 10;
+            text-align: left;
+        }
+
+        @keyframes float-idle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        @keyframes card-in {
+            from { opacity: 0; transform: translateY(20px) scale(0.94); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .float-card-1 {
+            left: -60px;
+            top: 40px;
+            min-width: 180px;
+            opacity: 0;
+            animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) 1.5s forwards, float-idle 4s ease-in-out 2.1s infinite;
+        }
+
+        .float-card-2 {
+            right: -40px;
+            top: 20px;
+            min-width: 160px;
+            opacity: 0;
+            animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) 1.7s forwards, float-idle 4s ease-in-out 2.3s infinite;
+        }
+
+        .float-card-3 {
+            right: -50px;
+            bottom: 40px;
+            min-width: 170px;
+            opacity: 0;
+            animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) 1.9s forwards, float-idle 4s ease-in-out 2.5s infinite;
+        }
+
+        .float-label {
+            font-size: 10px;
+            color: #aeb9b8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .float-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: #eef3f1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .float-pill {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 100px;
+            background: rgba(54, 224, 166, 0.15);
+            color: #36e0a6;
+            font-weight: 500;
+        }
+
+        .float-pill.blue {
+            background: rgba(155, 140, 240, 0.15);
+            color: #9b8cf0;
+        }
+
+        .sched-time {
+            font-size: 13px;
+            color: #36e0a6;
+            font-weight: 600;
+        }
+
+        .sched-sub {
+            font-size: 11px;
+            color: #aeb9b8;
+            margin-top: 2px;
+        }
+
+        .avatar-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .mock-avatar {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 1.5px solid #0d1614;
+            margin-right: -6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .mock-avatar:nth-child(1) { background: #3b4fd6; color: #a0aaff; }
+        .mock-avatar:nth-child(2) { background: #9b3db8; color: #d0aaff; }
+        .mock-avatar:nth-child(3) { background: #1a9e5c; color: #aaffcc; }
+
+        @media (max-width: 720px) {
+            .mockup-body { grid-template-columns: 1fr; }
+            .mock-sidebar { display: none; }
+            .float-card-1, .float-card-3 { display: none; }
+            .float-card-2 { right: -10px; top: -18px; }
+        }
+
+        /* logo strip autoscroll */
+        .logo-track {
+            overflow: hidden;
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+        }
+
+        .logo-inner {
+            display: flex;
+            align-items: center;
+            gap: 3.5rem;
+            white-space: nowrap;
+            width: max-content;
+            animation: scroll-logos 28s linear infinite;
+        }
+
+        .logo-inner:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes scroll-logos {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .hero-anim,
+            .hero-word,
+            .hero-scale,
+            .float-card-1,
+            .float-card-2,
+            .float-card-3 {
+                animation: none;
+                opacity: 1;
+                transform: none;
+            }
+
+            .logo-inner,
+            .ai-dot {
+                animation: none;
+            }
+        }
+    </style>
+</head>
+
+<body class="font-body-lg text-body-lg">
+    <!-- TopAppBar -->
+    <header
+        class="fixed top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-7xl rounded-full bg-surface/60 backdrop-blur-xl flex justify-between items-center px-8 py-4 z-50 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
+        <div class="flex items-center gap-3">
+            <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true">
+                <defs>
+                    <linearGradient id="logoGradientHeader" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#4fe3c8" />
+                        <stop offset="55%" stop-color="#36e0a6" />
+                        <stop offset="100%" stop-color="#9b8cf0" />
+                    </linearGradient>
+                </defs>
+                <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#logoGradientHeader)" />
+                <path d="M32 12 L36.2 27.8 L52 32 L36.2 36.2 L32 52 L27.8 36.2 L12 32 L27.8 27.8 Z"
+                    fill="#070b0a" />
+            </svg>
+            <span class="text-headline-lg font-headline-lg font-bold tracking-tight text-on-surface">Klicklocal</span>
+        </div>
+        <nav class="hidden md:flex gap-8">
+            <a class="text-on-surface-variant font-body-lg hover:text-secondary transition-colors duration-300"
+                href="#features">Funktionen</a>
+            <a class="text-on-surface-variant font-body-lg hover:text-secondary transition-colors duration-300"
+                href="#how">So funktioniert's</a>
+            <a class="text-on-surface-variant font-body-lg hover:text-secondary transition-colors duration-300"
+                href="#testimonials">Referenzen</a>
+            <a class="text-on-surface-variant font-body-lg hover:text-secondary transition-colors duration-300"
+                href="#pricing">Preise</a>
+        </nav>
+        <button
+            class="glow-pill px-6 py-2.5 rounded-full font-label-caps text-label-caps text-on-primary font-bold scale-95 active:scale-90 transition-transform">
+            Jetzt starten
+        </button>
+    </header>
+    <main class="relative overflow-hidden">
+        <div class="liquid-bg"></div>
+        <!-- Hero Section -->
+        <section
+            class="min-h-screen flex flex-col justify-center items-center text-center px-margin-mobile md:px-margin-desktop pt-32">
+            <!-- Trust badge — animates in, 0ms -->
+            <div class="hero-anim inline-flex items-center gap-3 px-4 py-1.5 rounded-full glass-card mb-8 border border-primary/20"
+                style="animation-delay: 0ms;">
+                <span class="text-primary tracking-widest text-sm">★★★★★</span>
+                <span class="w-px h-3.5 bg-white/15"></span>
+                <span class="text-label-caps font-label-caps text-on-surface-variant">
+                    <strong class="text-on-surface">4,9</strong> · von 500+ Unternehmen genutzt
+                </span>
+            </div>
+
+            <!-- H1 headline — staggered by word, 150ms+ -->
+            <h1 class="font-display-lg text-[40px] md:text-display-lg leading-tight max-w-4xl mx-auto mb-6 text-on-surface">
+                <span class="hero-word" style="animation-delay: 150ms;">Social</span>
+                <span class="hero-word" style="animation-delay: 250ms;">Media,</span>
+                <br />
+                <span class="hero-word bg-gradient-to-r from-secondary via-primary to-tertiary bg-clip-text text-transparent"
+                    style="animation-delay: 350ms;">auf</span>
+                <span class="hero-word bg-gradient-to-r from-secondary via-primary to-tertiary bg-clip-text text-transparent"
+                    style="animation-delay: 450ms;">Autopilot.</span>
+            </h1>
+
+            <!-- Subline — fades in, 350ms -->
+            <p class="hero-anim font-body-lg text-on-surface-variant max-w-2xl mx-auto mb-10" style="animation-delay: 350ms;">
+                Dein KI-Copilot für Content, Planung und Antworten – über Instagram, TikTok und Facebook.
+                Entwickelt für kleine und mittlere Unternehmen, die online wachsen wollen, ohne Stunden zu
+                verlieren.
+            </p>
+
+            <!-- Primary CTA + pulsing ring & secondary ghost CTA -->
+            <div class="hero-anim flex flex-col md:flex-row gap-4 justify-center" style="animation-delay: 450ms;">
+                <button
+                    class="pulse-ring glow-pill px-10 py-4 rounded-full font-title-md text-title-md text-on-primary font-bold flex items-center justify-center gap-2">
+                    Kostenlos starten <span class="material-symbols-outlined">arrow_forward</span>
+                </button>
+                <button class="glass-card px-10 py-4 font-title-md text-title-md text-on-surface hover:bg-white/5">
+                    Funktionen ansehen
+                </button>
+            </div>
+
+            <!-- Dashboard mockup — 500ms scale-in -->
+            <div class="hero-scale mockup-stage mt-20 px-4 md:px-0">
+                <div class="absolute -top-10 inset-x-0 mx-auto w-[340px] h-[340px] bg-primary opacity-20 blur-[110px] orb-pulse pointer-events-none"></div>
+
+                <div class="float-card float-card-1">
+                    <div class="float-label">Nächster Post</div>
+                    <div class="sched-time">Heute · 09:15</div>
+                    <div class="sched-sub">Instagram · KI-generiert ✦</div>
+                </div>
+
+                <div class="float-card float-card-2">
+                    <div class="float-label">Reichweite ↑</div>
+                    <div class="float-value">
+                        +24 %
+                        <span class="float-pill">90 Tage</span>
+                    </div>
+                </div>
+
+                <div class="float-card float-card-3">
+                    <div class="float-label">Neue Nachrichten</div>
+                    <div class="avatar-row">
+                        <div class="mock-avatar">LK</div>
+                        <div class="mock-avatar">MR</div>
+                        <div class="mock-avatar">TN</div>
+                    </div>
+                    <div class="float-value">
+                        12 DMs
+                        <span class="float-pill blue">KI-Antwort</span>
+                    </div>
+                </div>
+
+                <div class="mockup-main">
+                    <div class="mockup-topbar">
+                        <div class="mock-dots">
+                            <div class="mock-dot r"></div>
+                            <div class="mock-dot y"></div>
+                            <div class="mock-dot g"></div>
+                        </div>
+                        <div class="mockup-topbar-title">Klicklocal · KI-Studio</div>
+                    </div>
+
+                    <div class="mockup-body">
+                        <div class="mock-sidebar">
+                            <div class="mock-sidebar-item active"><span>✦</span> KI-Studio</div>
+                            <div class="mock-sidebar-item"><span>📅</span> Kalender</div>
+                            <div class="mock-sidebar-item"><span>💬</span> Posteingang</div>
+                            <div class="mock-sidebar-item"><span>📊</span> Insights</div>
+                            <div class="mock-sidebar-item" style="margin-top: auto;"><span>⚙</span> Einstellungen</div>
+                        </div>
+
+                        <div class="mock-content">
+                            <div class="mock-header">Content diese Woche · 3 Posts geplant</div>
+
+                            <div class="post-card">
+                                <div class="post-platform ig">📸</div>
+                                <div class="post-meta">
+                                    <div class="post-title">Frühlingsangebot – Reel</div>
+                                    <div class="post-body">Entdecke unsere neuen Produkte – frisch, farbenfroh und perfekt für die Saison …</div>
+                                    <div class="post-chips">
+                                        <span class="post-chip green">Geplant · Mo 09:15</span>
+                                        <span class="post-chip">#frühling</span>
+                                        <span class="post-chip">#angebot</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="post-card">
+                                <div class="post-platform tt">🎵</div>
+                                <div class="post-meta">
+                                    <div class="post-title">Behind the Scenes</div>
+                                    <div class="post-body">Wie wir jeden Morgen starten – ein Blick hinter die Kulissen …</div>
+                                    <div class="post-chips">
+                                        <span class="post-chip">Entwurf</span>
+                                        <span class="post-chip">#bts</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mock-ai-row">
+                                <div class="ai-dot"></div>
+                                <div class="ai-text"><strong>KI schlägt vor:</strong> Poste mittwochs zwischen 18–20 Uhr für +31 % mehr Reichweite.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logo strip — autoscroll -->
+            <div class="hero-anim w-full max-w-5xl mt-20" style="animation-delay: 700ms;">
+                <p class="text-label-caps font-label-caps text-on-surface-variant/60 mb-6">Vertraut von Unternehmen wie deinem</p>
+                <div class="logo-track w-full">
+                    <div class="logo-inner text-on-surface-variant/70 font-bold text-lg tracking-tight">
+                        <span class="flex items-center gap-2">🍕 Bella Pizza</span>
+                        <span class="flex items-center gap-2">💪 Studio Nord</span>
+                        <span class="flex items-center gap-2">🌿 GreenMarket</span>
+                        <span class="flex items-center gap-2">✂️ HairCraft</span>
+                        <span class="flex items-center gap-2">📚 BuchHaus</span>
+                        <span class="flex items-center gap-2">☕ Café Morgen</span>
+                        <span class="flex items-center gap-2">🎨 DesignStudio</span>
+                        <span class="flex items-center gap-2">🍕 Bella Pizza</span>
+                        <span class="flex items-center gap-2">💪 Studio Nord</span>
+                        <span class="flex items-center gap-2">🌿 GreenMarket</span>
+                        <span class="flex items-center gap-2">✂️ HairCraft</span>
+                        <span class="flex items-center gap-2">📚 BuchHaus</span>
+                        <span class="flex items-center gap-2">☕ Café Morgen</span>
+                        <span class="flex items-center gap-2">🎨 DesignStudio</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Problem Section -->
+        <section
+            class="py-stack-lg px-margin-mobile md:px-margin-desktop bg-gradient-to-b from-transparent to-surface-container-lowest">
+            <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+                <div class="reveal">
+                    <h2 class="font-headline-lg text-headline-lg mb-6">Social Media frisst deine Zeit</h2>
+                    <p class="text-on-surface-variant font-body-lg mb-6">
+                        Als kleines Unternehmen jonglierst du Instagram, TikTok und Facebook neben deinem eigentlichen
+                        Geschäft. Posten, planen, antworten – das kostet Stunden, die du nicht hast.
+                    </p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <span class="material-symbols-outlined text-error">schedule</span>
+                            <span>Keine Zeit: Content-Erstellung und Captions verschlingen jede Woche viele Stunden.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="material-symbols-outlined text-error">lightbulb</span>
+                            <span>Ideen-Stau: Dir fehlen frische Post-Ideen und ein roter Faden für deinen Kanal.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="material-symbols-outlined text-error">forum</span>
+                            <span>Verpasste Nachrichten: Kommentare und DMs über mehrere Plattformen gehen unter.</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="reveal relative flex justify-center">
+                    <div class="absolute inset-0 bg-primary opacity-10 blur-[100px]"></div>
+                    <img alt="Klicklocal Onboarding – KI erstellt deinen Content" src="images/cutout/welcome.png"
+                        class="relative w-[240px] md:w-[280px] drop-shadow-[0_20px_60px_rgba(94,233,181,0.22)]" />
+                </div>
+            </div>
+        </section>
+        <!-- Solution Section -->
+        <section class="py-stack-lg px-margin-mobile md:px-margin-desktop overflow-hidden">
+            <div class="max-w-7xl mx-auto flex flex-col items-center text-center mb-16">
+                <div class="reveal">
+                    <h2 class="font-headline-lg text-headline-lg mb-6">Dein Copilot für alles Soziale</h2>
+                    <p class="text-on-surface-variant font-body-lg max-w-2xl">
+                        Klicklocal erledigt die Fleißarbeit. Beschreibe dein Business einmal – die KI übernimmt
+                        Content, Planung und Antworten in deiner Tonalität, damit du Klicklocal bleibst.
+                    </p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto px-margin-mobile">
+                <div class="glass-card p-8 reveal">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center text-secondary mb-6">
+                        <span class="material-symbols-outlined">auto_awesome</span>
+                    </div>
+                    <h3 class="font-title-md text-title-md mb-4">Content</h3>
+                    <p class="text-on-surface-variant font-body-sm">Posts, Captions und Hashtags per Knopfdruck –
+                        passend zu deiner Marke und deiner Zielgruppe.</p>
+                </div>
+                <div class="glass-card p-8 reveal" style="transition-delay: 100ms;">
+                    <div class="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary mb-6">
+                        <span class="material-symbols-outlined">calendar_month</span>
+                    </div>
+                    <h3 class="font-title-md text-title-md mb-4">Planung</h3>
+                    <p class="text-on-surface-variant font-body-sm">Plane Wochen im Voraus und veröffentliche
+                        automatisch zur besten Zeit – auf allen Kanälen.</p>
+                </div>
+                <div class="glass-card p-8 reveal" style="transition-delay: 200ms;">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-tertiary/20 flex items-center justify-center text-tertiary mb-6">
+                        <span class="material-symbols-outlined">mark_chat_read</span>
+                    </div>
+                    <h3 class="font-title-md text-title-md mb-4">Antworten</h3>
+                    <p class="text-on-surface-variant font-body-sm">Kommentare und DMs aus allen Netzwerken in einem
+                        Posteingang – mit KI-Antwortvorschlägen.</p>
+                </div>
+            </div>
+        </section>
+        <!-- App Showcase Gallery -->
+        <section class="py-stack-lg px-margin-mobile md:px-margin-desktop overflow-hidden" id="how">
+            <div class="max-w-7xl mx-auto text-center mb-16 reveal">
+                <h2 class="font-headline-lg text-headline-lg mb-6">Alles in einer App</h2>
+                <p class="text-on-surface-variant font-body-lg max-w-2xl mx-auto">
+                    Vom ersten Entwurf bis zur Erfolgsmessung: Erstelle, plane, beantworte und analysiere deinen
+                    Social-Media-Auftritt – ganz ohne Tool-Chaos.
+                </p>
+            </div>
+            <div class="flex gap-6 md:gap-10 overflow-x-auto md:overflow-visible md:justify-center pb-6 snap-x">
+                <figure class="reveal flex-none snap-center">
+                    <img alt="KI-Studio: Content erstellen" src="images/cutout/Studio.png"
+                        class="w-[220px] md:w-[240px] drop-shadow-[0_20px_50px_rgba(94,233,181,0.18)] transition-transform duration-500 hover:-translate-y-2" />
+                    <figcaption class="mt-4 text-label-caps font-label-caps text-on-surface-variant">Content erstellen
+                    </figcaption>
+                </figure>
+                <figure class="reveal flex-none snap-center" style="transition-delay: 100ms;">
+                    <img alt="Content-Kalender: Beiträge planen" src="images/cutout/Plan.png"
+                        class="w-[220px] md:w-[240px] drop-shadow-[0_20px_50px_rgba(123,211,242,0.18)] transition-transform duration-500 hover:-translate-y-2" />
+                    <figcaption class="mt-4 text-label-caps font-label-caps text-on-surface-variant">Beiträge planen
+                    </figcaption>
+                </figure>
+                <figure class="reveal flex-none snap-center" style="transition-delay: 200ms;">
+                    <img alt="Posteingang: Nachrichten beantworten" src="images/cutout/Inbox.png"
+                        class="w-[220px] md:w-[240px] drop-shadow-[0_20px_50px_rgba(123,211,242,0.18)] transition-transform duration-500 hover:-translate-y-2" />
+                    <figcaption class="mt-4 text-label-caps font-label-caps text-on-surface-variant">Nachrichten
+                        beantworten</figcaption>
+                </figure>
+                <figure class="reveal flex-none snap-center" style="transition-delay: 300ms;">
+                    <img alt="Insights: Erfolg messen" src="images/cutout/Insight.png"
+                        class="w-[220px] md:w-[240px] drop-shadow-[0_20px_50px_rgba(94,233,181,0.18)] transition-transform duration-500 hover:-translate-y-2" />
+                    <figcaption class="mt-4 text-label-caps font-label-caps text-on-surface-variant">Erfolg messen
+                    </figcaption>
+                </figure>
+            </div>
+        </section>
+        <!-- Features Grid -->
+        <section class="py-stack-lg px-margin-mobile md:px-margin-desktop relative" id="features">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="font-headline-lg text-headline-lg mb-12 text-center reveal">Alles, was du zum Wachsen
+                    brauchst</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Feature Cards -->
+                    <div class="glass-card p-10 reveal group">
+                        <span
+                            class="material-symbols-outlined text-[48px] text-primary mb-6 block group-hover:scale-110 transition-transform">auto_awesome</span>
+                        <h4 class="font-title-md text-title-md mb-4">KI-Content-Studio</h4>
+                        <p class="text-on-surface-variant font-body-sm">Beschreibe deine Idee – die KI schreibt Posts,
+                            Captions und Hashtags und schlägt passende Visuals vor.</p>
+                    </div>
+                    <div class="glass-card p-10 reveal group">
+                        <span
+                            class="material-symbols-outlined text-[48px] text-secondary mb-6 block group-hover:scale-110 transition-transform">calendar_month</span>
+                        <h4 class="font-title-md text-title-md mb-4">Content-Kalender</h4>
+                        <p class="text-on-surface-variant font-body-sm">Plane und terminiere Beiträge für alle Kanäle
+                            und veröffentliche automatisch zur besten Zeit.</p>
+                    </div>
+                    <div class="glass-card p-10 reveal group">
+                        <span
+                            class="material-symbols-outlined text-[48px] text-tertiary mb-6 block group-hover:scale-110 transition-transform">forum</span>
+                        <h4 class="font-title-md text-title-md mb-4">Vereinter Posteingang</h4>
+                        <p class="text-on-surface-variant font-body-sm">Kommentare und Direktnachrichten aus Instagram,
+                            TikTok und Facebook an einem Ort – mit KI-Antworten.</p>
+                    </div>
+                    <div class="glass-card p-10 reveal group">
+                        <span
+                            class="material-symbols-outlined text-[48px] text-primary-container mb-6 block group-hover:scale-110 transition-transform">insights</span>
+                        <h4 class="font-title-md text-title-md mb-4">Insights & Analytics</h4>
+                        <p class="text-on-surface-variant font-body-sm">Reichweite, Follower-Wachstum und Engagement
+                            verständlich aufbereitet – ohne Tabellen-Chaos.</p>
+                    </div>
+                    <div class="glass-card p-10 reveal group">
+                        <span
+                            class="material-symbols-outlined text-[48px] text-secondary-container mb-6 block group-hover:scale-110 transition-transform">hub</span>
+                        <h4 class="font-title-md text-title-md mb-4">Multi-Plattform</h4>
+                        <p class="text-on-surface-variant font-body-sm">Verbinde Instagram, TikTok und Facebook und
+                            verwalte alle Kanäle aus einer einzigen App.</p>
+                    </div>
+                    <div class="glass-card p-10 reveal group">
+                        <span
+                            class="material-symbols-outlined text-[48px] text-on-surface mb-6 block group-hover:scale-110 transition-transform">brush</span>
+                        <h4 class="font-title-md text-title-md mb-4">Deine Markenstimme</h4>
+                        <p class="text-on-surface-variant font-body-sm">Die KI lernt deinen Tonfall, sodass jeder
+                            Beitrag klingt, als hättest du ihn selbst geschrieben.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Tech Section / Visualization -->
+        <section class="py-stack-lg bg-surface-container-low px-margin-mobile" id="tech">
+            <div class="max-w-7xl mx-auto glass-card p-12 overflow-hidden relative">
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="reveal">
+                        <h2 class="font-headline-lg text-headline-lg mb-6">Spar dir Stunden – Woche für Woche</h2>
+                        <p class="text-on-surface-variant font-body-lg mb-8">
+                            Unternehmen, die mit Klicklocal arbeiten, posten regelmäßiger, antworten schneller und sehen
+                            endlich, was wirklich funktioniert.
+                        </p>
+                        <div class="space-y-8">
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-label-caps text-label-caps text-on-surface">Weniger Zeitaufwand
+                                        für Content</span>
+                                    <span class="text-primary font-bold">−80 %</span>
+                                </div>
+                                <div class="h-2 w-full bg-white/10 rounded-full">
+                                    <div class="h-full bg-primary rounded-full" style="width: 80%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-label-caps text-label-caps text-on-surface">Mehr Reichweite in 90
+                                        Tagen</span>
+                                    <span class="text-secondary font-bold">+24 %</span>
+                                </div>
+                                <div class="h-2 w-full bg-white/10 rounded-full">
+                                    <div class="h-full bg-secondary rounded-full" style="width: 60%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-label-caps text-label-caps text-on-surface">Schnellere
+                                        Antwortzeit</span>
+                                    <span class="text-tertiary font-bold">3,5x</span>
+                                </div>
+                                <div class="h-2 w-full bg-white/10 rounded-full">
+                                    <div class="h-full bg-tertiary rounded-full" style="width: 70%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="reveal p-4 flex justify-center">
+                        <img alt="Klicklocal Insights-Dashboard" src="images/cutout/Insight.png"
+                            class="w-[240px] md:w-[270px] drop-shadow-[0_20px_60px_rgba(94,233,181,0.25)]" />
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Testimonials -->
+        <section class="py-stack-lg px-margin-mobile" id="testimonials">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="font-headline-lg text-headline-lg mb-12 text-center reveal">Von kleinen Unternehmen
+                    geliebt</h2>
+                <div class="flex flex-col md:flex-row gap-8">
+                    <div class="glass-card p-8 reveal flex-1">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div
+                                class="w-12 h-12 rounded-full bg-surface-bright flex items-center justify-center font-bold">
+                                LK</div>
+                            <div>
+                                <p class="font-title-md text-on-surface">Thomas Kern</p>
+                                <p class="text-label-caps font-label-caps text-primary">Inhaber, KERNE - Marketing &
+                                    Kommunikation</p>
+                            </div>
+                        </div>
+                        <p class="font-body-sm text-on-surface-variant italic leading-relaxed">
+                            "Früher habe ich sonntags zwei Stunden für Posts geopfert. Heute beschreibe ich kurz die
+                            Idee und Klicklocal erledigt den Rest – inklusive Planung. Endlich poste ich regelmäßig."
+                        </p>
+                    </div>
+                    <div class="glass-card p-8 reveal flex-1" style="transition-delay: 100ms;">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div
+                                class="w-12 h-12 rounded-full bg-surface-bright flex items-center justify-center font-bold">
+                                MR</div>
+                            <div>
+                                <p class="font-title-md text-on-surface">Marco Rossi</p>
+                                <p class="text-label-caps font-label-caps text-secondary">Gründer, Studio Nord Fitness
+                                </p>
+                            </div>
+                        </div>
+                        <p class="font-body-sm text-on-surface-variant italic leading-relaxed">
+                            "Instagram, TikTok und Facebook in einer App – und die KI antwortet sogar auf DMs in meinem
+                            Tonfall. Unsere Reichweite ist in drei Monaten spürbar gewachsen."
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Pricing -->
+        <section class="py-stack-lg px-margin-mobile" id="pricing">
+            <div class="max-w-7xl mx-auto text-center mb-10 reveal">
+                <h2 class="font-headline-lg text-headline-lg mb-4">Wähle deinen Modus</h2>
+                <p class="text-on-surface-variant max-w-xl mx-auto">Beide Modi eignen sich für alle Unternehmen. Teste
+                    Pro Mode 14 Tage kostenlos – jederzeit kündbar, keine versteckten Kosten.</p>
+            </div>
+            <!-- Billing toggle -->
+            <div class="flex justify-center items-center gap-4 mb-12 reveal">
+                <span id="label-monthly" class="font-body-lg text-on-surface">Monatlich</span>
+                <button id="billing-toggle" role="switch" aria-checked="false" aria-label="Abrechnung umschalten"
+                    class="relative w-16 h-9 rounded-full bg-surface-variant border border-white/10 transition-colors">
+                    <span id="billing-knob"
+                        class="absolute top-1 left-1 w-7 h-7 rounded-full bg-primary transition-transform duration-300"></span>
+                </button>
+                <span id="label-annual" class="font-body-lg text-on-surface-variant">Jährlich</span>
+                <span class="ml-1 px-3 py-1 rounded-full bg-primary/15 text-primary text-label-caps font-label-caps">2
+                    MONATE GRATIS</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <!-- Pro Mode -->
+                <div class="glass-card p-10 flex flex-col items-center reveal relative border-primary/40 bg-surface-variant/50">
+                    <div
+                        class="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-on-primary px-4 py-1 rounded-full text-label-caps font-bold">
+                        AM BELIEBTESTEN</div>
+                    <h3 class="font-title-md text-title-md mb-2">Pro Mode</h3>
+                    <div class="text-[48px] font-bold text-on-surface" data-price data-monthly="39,99 €"
+                        data-annual="33,25 €">39,99 €<span
+                            class="text-lg font-normal text-on-surface-variant">/Monat</span></div>
+                    <p class="text-body-sm text-on-surface-variant mb-1 h-5" data-note data-monthly=""
+                        data-annual="399 € jährlich abgerechnet"></p>
+                    <p class="text-label-caps font-label-caps text-primary mb-8">14 TAGE KOSTENLOS TESTEN</p>
+                    <ul class="text-on-surface-variant font-body-sm space-y-4 mb-10 text-left w-full">
+                        <li class="flex gap-2"><span class="material-symbols-outlined text-primary text-sm">check</span>
+                            3 Posts/Reels pro Woche</li>
+                        <li class="flex gap-2"><span class="material-symbols-outlined text-primary text-sm">check</span>
+                            Für Instagram & TikTok</li>
+                        <li class="flex gap-2"><span class="material-symbols-outlined text-primary text-sm">check</span>
+                            KI-Content, Captions & Hashtags</li>
+                        <li class="flex gap-2"><span class="material-symbols-outlined text-primary text-sm">check</span>
+                            Auto-Scheduling (automatische Planung)</li>
+                        <li class="flex gap-2"><span class="material-symbols-outlined text-primary text-sm">check</span>
+                            Für 1 Unternehmen / 1 Nutzer</li>
+                    </ul>
+                    <button class="w-full py-4 rounded-full glow-pill text-on-primary font-bold">14 Tage kostenlos
+                        testen</button>
+                </div>
+                <!-- Agency Mode -->
+                <div class="glass-card p-10 flex flex-col items-center reveal" style="transition-delay: 100ms;">
+                    <h3 class="font-title-md text-title-md mb-2">Agency Mode</h3>
+                    <div class="text-[48px] font-bold text-on-surface" data-price data-monthly="69,99 €"
+                        data-annual="58,25 €">69,99 €<span
+                            class="text-lg font-normal text-on-surface-variant">/Monat</span></div>
+                    <p class="text-body-sm text-on-surface-variant mb-1 h-5" data-note data-monthly=""
+                        data-annual="699 € jährlich abgerechnet"></p>
+                    <p class="text-label-caps font-label-caps text-secondary mb-8">UNBEGRENZTER CONTENT</p>
+                    <ul class="text-on-surface-variant font-body-sm space-y-4 mb-10 text-left w-full">
+                        <li class="flex gap-2"><span class="material-symbols-outlined text-primary text-sm">check</span>
+                            Unbegrenzte Posts, Reels & Videos</li>
+                        <li class="flex gap-2"><span class="material-symbols-outlined text-primary text-sm">check</span>
+                            Für Instagram, TikTok & Facebook</li>
+                        <li class="flex gap-2"><span class="material-symbols-outlined text-primary text-sm">check</span>
+                            Auto-Scheduling (automatische Planung)</li>
+                        <li class="flex gap-2"><span class="material-symbols-outlined text-primary text-sm">check</span>
+                            Erweiterte Analysen & Algorithmus-Insights für mehr Reichweite</li>
+                        <li class="flex gap-2"><span class="material-symbols-outlined text-primary text-sm">check</span>
+                            Für 1 Unternehmen / 1 Nutzer</li>
+                    </ul>
+                    <button
+                        class="w-full py-4 rounded-full border border-white/10 hover:bg-white/5 transition-colors font-bold">Agency
+                        Mode starten</button>
+                </div>
+            </div>
+        </section>
+        <!-- Final CTA -->
+        <section class="py-24 px-margin-mobile flex flex-col items-center text-center">
+            <div class="reveal">
+                <h2 class="font-display-lg text-display-lg mb-4">Bereit für Social Media auf Autopilot?</h2>
+                <p class="text-on-surface-variant font-body-lg max-w-xl mx-auto mb-8">Schließe deine Kanäle an und
+                    lass deinen KI-Copilot loslegen – in unter 5 Minuten.</p>
+                <button class="glow-pill px-12 py-5 rounded-full font-title-md text-title-md text-on-primary font-bold">
+                    Klicklocal kostenlos starten
+                </button>
+            </div>
+        </section>
+    </main>
+    <!-- Footer -->
+    <footer class="bg-surface-container-lowest border-t border-white/5">
+        <div
+            class="max-w-7xl mx-auto px-margin-desktop py-stack-lg flex flex-col md:flex-row justify-between items-center gap-stack-md">
+            <div class="flex items-center gap-3">
+                <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="logoGradientFooter" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#4fe3c8" />
+                            <stop offset="55%" stop-color="#36e0a6" />
+                            <stop offset="100%" stop-color="#9b8cf0" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#logoGradientFooter)" />
+                    <path d="M32 12 L36.2 27.8 L52 32 L36.2 36.2 L32 52 L27.8 36.2 L12 32 L27.8 27.8 Z"
+                        fill="#070b0a" />
+                </svg>
+                <span class="text-title-md font-title-md font-bold text-on-surface">Klicklocal</span>
+            </div>
+            <div class="flex gap-8">
+                <a class="text-on-surface-variant text-body-sm hover:text-primary transition-colors opacity-80 hover:opacity-100"
+                    href="#">Datenschutz</a>
+                <a class="text-on-surface-variant text-body-sm hover:text-primary transition-colors opacity-80 hover:opacity-100"
+                    href="#">AGB</a>
+                <a class="text-on-surface-variant text-body-sm hover:text-primary transition-colors opacity-80 hover:opacity-100"
+                    href="#">Sicherheit</a>
+                <a class="text-on-surface-variant text-body-sm hover:text-primary transition-colors opacity-80 hover:opacity-100"
+                    href="#">Kontakt</a>
+            </div>
+            <p class="text-body-sm text-on-surface-variant font-body-sm">© 2026 Klicklocal. Alle Rechte vorbehalten.
+            </p>
+        </div>
+    </footer>
+    <script>
+        // Simple Intersection Observer for scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Pricing billing toggle (monthly / annual)
+        const billingToggle = document.getElementById('billing-toggle');
+        if (billingToggle) {
+            const knob = document.getElementById('billing-knob');
+            const labelMonthly = document.getElementById('label-monthly');
+            const labelAnnual = document.getElementById('label-annual');
+            const setBilling = (annual) => {
+                billingToggle.setAttribute('aria-checked', String(annual));
+                knob.style.transform = annual ? 'translateX(28px)' : 'translateX(0)';
+                labelMonthly.classList.toggle('text-on-surface', !annual);
+                labelMonthly.classList.toggle('text-on-surface-variant', annual);
+                labelAnnual.classList.toggle('text-on-surface', annual);
+                labelAnnual.classList.toggle('text-on-surface-variant', !annual);
+                document.querySelectorAll('[data-price]').forEach(el => {
+                    el.firstChild.textContent = annual ? el.dataset.annual : el.dataset.monthly;
+                });
+                document.querySelectorAll('[data-note]').forEach(el => {
+                    el.textContent = annual ? el.dataset.annual : el.dataset.monthly;
+                });
+            };
+            billingToggle.addEventListener('click', () => {
+                setBilling(billingToggle.getAttribute('aria-checked') !== 'true');
+            });
+        }
+
+    </script>
+</body>
+
+</html>

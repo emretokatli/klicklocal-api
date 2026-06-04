@@ -1,0 +1,2 @@
+# If you still get 500: rename this file to .htaccess (replace the active one).
+# Laravel routes will not work until .htaccess is fixed — use only to test ping.php.

@@ -11,19 +11,24 @@ use App\Http\Controllers\Api\V1\Admin\TransactionController;
 use App\Http\Controllers\Api\V1\Admin\UsageController as AdminUsageController;
 use App\Http\Controllers\Api\V1\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
+use App\Http\Controllers\Api\V1\AiContentController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillingController;
+use App\Http\Controllers\Api\V1\BusinessProfileController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\MediaController;
+use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\StripeWebhookController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
+use App\Http\Controllers\Api\V1\TikTokSocialAccountController;
 use App\Http\Controllers\Api\V1\UsageController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('social-accounts/instagram/callback', [InstagramSocialAccountController::class, 'callback']);
+    Route::get('social-accounts/tiktok/callback', [TikTokSocialAccountController::class, 'callback']);
 
     Route::post('webhooks/stripe', [StripeWebhookController::class, 'handle'])
         ->middleware('stripe.webhook');
@@ -42,6 +47,14 @@ Route::prefix('v1')->group(function (): void {
         Route::apiResource('workspaces', WorkspaceController::class);
 
         Route::middleware('workspace.team')->group(function (): void {
+            Route::get('workspaces/{workspace}/business-profile', [BusinessProfileController::class, 'show']);
+            Route::put('workspaces/{workspace}/business-profile', [BusinessProfileController::class, 'update']);
+            Route::patch('workspaces/{workspace}/onboarding', [OnboardingController::class, 'update']);
+
+            Route::post('ai/generate', [AiContentController::class, 'generate']);
+            Route::get('ai/generations', [AiContentController::class, 'index']);
+
+
             Route::get('posts', [PostController::class, 'index']);
             Route::post('posts', [PostController::class, 'store']);
             Route::get('posts/{post}', [PostController::class, 'show']);
@@ -66,6 +79,12 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('connect', [InstagramSocialAccountController::class, 'connect']);
                 Route::post('disconnect', [InstagramSocialAccountController::class, 'disconnect']);
                 Route::get('status', [InstagramSocialAccountController::class, 'status']);
+            });
+
+            Route::prefix('social-accounts/tiktok')->group(function (): void {
+                Route::get('connect', [TikTokSocialAccountController::class, 'connect']);
+                Route::post('disconnect', [TikTokSocialAccountController::class, 'disconnect']);
+                Route::get('status', [TikTokSocialAccountController::class, 'status']);
             });
         });
     });

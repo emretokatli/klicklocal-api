@@ -1,0 +1,27 @@
+# Runs the STAGING Next.js server (npm start) as a managed service.
+# App dir: /var/www/klicklocal-staging/frontend   Port: 3001   Branch: develop
+#
+# Install:
+#   sudo cp deploy/systemd/klicklocal-frontend-staging.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now klicklocal-frontend-staging
+#   sudo systemctl status klicklocal-frontend-staging
+#
+# Logs:  sudo journalctl -u klicklocal-frontend-staging -f
+
+[Unit]
+Description=Klicklocal Next.js frontend (staging)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/klicklocal-staging/frontend
+Environment=NODE_ENV=production
+Environment=PORT=3001
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

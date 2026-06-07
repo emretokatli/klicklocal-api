@@ -54,7 +54,7 @@ Implemented:
 - Next.js dashboard with React Query, reusable UI components, admin/customer dashboards, billing, posts, media, calendar, settings, and social accounts
 - Next.js same-origin `/api/v1` proxy to Laravel
 - Expo Router mobile app with authentication and workspace API integration
-- UAT, Vercel deployment, and Meta Instagram setup documentation
+- Production/staging deployment (server + Vercel) and Meta Instagram setup documentation
 
 Not implemented or still future-facing:
 
@@ -588,24 +588,38 @@ Use the correct LAN IP for the development machine when testing on a physical de
 
 ---
 
-## UAT And Deployment
+## Deployment
 
-UAT and deployment docs:
+Two isolated environments, deployed by branch. No localhost URLs in deployed
+code; all endpoints come from environment variables; production and staging
+databases stay isolated.
 
-- `docs/UAT.md`
-- `docs/UAT-WEBSPACE-DEPLOY.md`
-- `docs/UAT-500-TROUBLESHOOTING.md`
-- `docs/VERCEL-DEPLOY.md`
+| Environment | Branch | Customer app | Admin | API |
+|-------------|--------|--------------|-------|-----|
+| Production | `main` | `https://klicklocal.app` | `https://admin.klicklocal.app` | `https://api.klicklocal.app` |
+| Staging | `develop` | `https://test.klicklocal.app` | `https://admin-test.klicklocal.app` | `https://api-test.klicklocal.app` |
 
-Frontend production/UAT supports two API modes:
+Deployment docs:
+
+- `deploy/README.md` — dedicated-server runbook (nginx, systemd, supervisor, both environments)
+- `docs/UAT.md` — staging overview
+- `docs/VERCEL-DEPLOY.md` — frontend on Vercel (prod from `main`, staging from `develop`)
+
+Frontend supports two API modes:
 
 - Recommended: `NEXT_PUBLIC_API_URL=/api/v1` with `BACKEND_API_URL` set server-side for the Next.js proxy.
 - Alternative: browser calls Laravel directly with CORS configured on the backend.
 
-Current UAT examples use:
+Production API base:
 
 ```txt
-https://gastrocycle.com/public/api/v1
+https://api.klicklocal.app/api/v1
+```
+
+Staging API base:
+
+```txt
+https://api-test.klicklocal.app/api/v1
 ```
 
 ---

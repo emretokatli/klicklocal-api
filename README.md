@@ -17,16 +17,21 @@ Social media scheduling platform (Buffer/Hootsuite-style).
 - MySQL database: **klicklocal**
 - API base: `http://localhost:1981/klicklocal/backend/public/api/v1`
 
-## UAT environment
+## Deployment
 
-See **[docs/UAT.md](docs/UAT.md)** and **[docs/UAT-WEBSPACE-DEPLOY.md](docs/UAT-WEBSPACE-DEPLOY.md)**. Quick activation:
+Two isolated environments, deployed by branch:
 
-```bash
-cd backend && cp .env.uat .env && php artisan config:clear && php artisan db:seed
-cd ../frontend && cp .env.uat.local .env.local
-```
+| Environment | Branch | Customer app | Admin | API |
+|-------------|--------|--------------|-------|-----|
+| Production | `main` | `https://klicklocal.app` | `https://admin.klicklocal.app` | `https://api.klicklocal.app` |
+| Staging | `develop` | `https://test.klicklocal.app` | `https://admin-test.klicklocal.app` | `https://api-test.klicklocal.app` |
 
-Set `YOUR_UAT_DOMAIN` in those env files to your public UAT hostname.
+Rules: no localhost URLs in deployed code, all endpoints from env vars, and
+production/staging databases stay isolated.
+
+- **Server runbook:** [deploy/README.md](deploy/README.md)
+- **Staging overview:** [docs/UAT.md](docs/UAT.md)
+- **Frontend on Vercel:** [docs/VERCEL-DEPLOY.md](docs/VERCEL-DEPLOY.md)
 
 ## Quick start
 

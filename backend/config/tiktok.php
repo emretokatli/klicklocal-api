@@ -20,6 +20,12 @@ return [
 
     'api_version' => env('TIKTOK_API_VERSION', 'v2'),
 
+    'oauth_authorize_url' => 'https://www.tiktok.com/v2/auth/authorize/',
+
+    'oauth_token_url' => 'https://open.tiktokapis.com/v2/oauth/token/',
+
+    'user_info_url' => 'https://open.tiktokapis.com/v2/user/info/',
+
     'scopes' => [
         'user.info.basic',
         'video.publish',

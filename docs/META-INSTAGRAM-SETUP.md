@@ -25,12 +25,12 @@ Register the **exact** callback URL per environment in Meta → Instagram → Bu
 | Environment | URL |
 |-------------|-----|
 | Local XAMPP | `http://localhost:1981/klicklocal/backend/public/api/v1/social-accounts/instagram/callback` |
-| UAT | `https://gastrocycle.com/public/api/v1/social-accounts/instagram/callback` |
-| Production | `https://<your-api-host>/public/api/v1/social-accounts/instagram/callback` |
+| Staging | `https://api-test.klicklocal.app/api/v1/social-accounts/instagram/callback` |
+| Production | `https://api.klicklocal.app/api/v1/social-accounts/instagram/callback` |
 
 Must match `INSTAGRAM_REDIRECT_URI` in `.env` character-for-character.
 
-**Local tip:** Meta may block `http://localhost`. Test connect on **HTTPS UAT** first, or use ngrok and register that HTTPS callback.   
+**Local tip:** Meta may block `http://localhost`. Test connect on **HTTPS staging** first, or use ngrok and register that HTTPS callback.   
 
 ## 4. Development testers
 

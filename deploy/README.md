@@ -1,358 +1,201 @@
-# Gastrocycle - Ubuntu (Hetzner) Deployment Runbook
+# Klicklocal — Deployment Strategy & Runbook
 
-Step-by-step guide to publish Klicklocal on a single Hetzner Ubuntu server:
+Klicklocal runs in two isolated environments on a single Ubuntu server. Each
+environment has its own app directory, its own database, and its own subdomains.
 
-| Domain | What runs there |
-|--------|-----------------|
-| `gastrocycle.com` | Landing page (Next.js `/`) |
-| `admin.gastrocycle.com` | Admin dashboard (same Next.js app) |
-| `api.gastrocycle.com` | Laravel API |
+## Environments
 
-You run **every command below on the server**, logged in over SSH. Lines starting
-with `sudo` need admin rights (you already are `root`, so `sudo` is optional but harmless).
+| Environment | Branch | Customer app | Admin | API |
+|-------------|--------|--------------|-------|-----|
+| **Production** | `main` | `https://klicklocal.app` | `https://admin.klicklocal.app` | `https://api.klicklocal.app` |
+| **Staging** | `develop` | `https://test.klicklocal.app` | `https://admin-test.klicklocal.app` | `https://api-test.klicklocal.app` |
 
-> Files referenced here live in this `deploy/` folder. After you clone the repo on the
-> server (step 3), they are at `/var/www/klicklocal/deploy/...`.
+The customer app and the admin dashboard are the **same Next.js app** served on
+two subdomains. Each environment runs one Next.js process and one Laravel API.
+
+## Rules
+
+- **Never use localhost URLs in production/staging code or config.** Localhost is
+  for local development only (see `backend/.env.example`, `frontend/.env.local.example`).
+- **All API endpoints come from environment variables** (`BACKEND_API_URL`,
+  `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STORAGE_URL`, `APP_URL`, `EXPO_PUBLIC_API_URL`).
+- **Production and staging databases must stay isolated** — separate MySQL
+  databases (`klicklocal_prod` vs `klicklocal_staging`) and separate users.
+- **Production deploys from `main`.** **Staging deploys from `develop`.**
+
+## Layout on the server
+
+| Path | Environment | Ports |
+|------|-------------|-------|
+| `/var/www/klicklocal` | Production (`main`) | Next.js `127.0.0.1:3000` |
+| `/var/www/klicklocal-staging` | Staging (`develop`) | Next.js `127.0.0.1:3001` |
+
+Config templates in this `deploy/` folder:
+
+| File | Purpose |
+|------|---------|
+| `env/backend.env.production.example` / `env/backend.env.staging.example` | Laravel `.env` |
+| `env/frontend.env.production.example` / `env/frontend.env.staging.example` | Next.js `.env.local` |
+| `nginx/*.klicklocal.app.conf` | One vhost per subdomain (6 total) |
+| `systemd/klicklocal-frontend*.service` | Next.js process (prod + staging) |
+| `supervisor/klicklocal-worker*.conf` | Queue worker (prod + staging) |
 
 ---
 
-## 0. Connect to the server
-
-From your Windows PowerShell (or the Hetzner Console "Console" button):
-
-```bash
-ssh root@167.233.19.131
-```
-
-Type `yes` the first time it asks about the fingerprint, then your password.
-
----
-
-## 1. Verify what is installed + install the rest
-
-Check versions (anything that says "command not found" still needs installing):
-
-```bash
-node -v
-npm -v
-php -v
-nginx -v
-mysql --version
-composer --version
-```
-
-node : v18.19.1
-npm : 9.2.0
-PHP : 8.3.6 (cli)
-ngnix : 1.24.0(Ubuntu)
-mysql : Ver 8.0.46-0ubuntu0.24.04.2 for Linux x86_64 ((Ubuntu))
-composer : version 2.7.1
-
-Update the package list and install everything Klicklocal needs:
+## 1. Server prerequisites (once)
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-
 sudo apt install -y nginx mysql-server \
   php8.3-fpm php8.3-cli php8.3-mysql php8.3-mbstring php8.3-xml \
   php8.3-curl php8.3-zip php8.3-bcmath php8.3-gd \
-  git unzip curl supervisor
-
-# Composer (PHP dependency manager)
-sudo apt install -y composer
-
-# Node.js 22 LTS (for the Next.js frontend)
+  git unzip curl supervisor composer
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
 sudo apt install -y nodejs
+ls /run/php/   # confirm the PHP-FPM socket (e.g. php8.3-fpm.sock)
 ```
 
-Find your exact PHP-FPM socket name (you will need it for Nginx in step 8):
+Point DNS A records for all six names to the server IP before requesting SSL.
 
-```bash
-ls /run/php/
-# Example output: php8.3-fpm.sock
+## 2. Databases (isolated)
+
+```sql
+-- Production
+CREATE DATABASE klicklocal_prod CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'klicklocal_prod'@'localhost' IDENTIFIED BY 'STRONG_PROD_PASSWORD';
+GRANT ALL PRIVILEGES ON klicklocal_prod.* TO 'klicklocal_prod'@'localhost';
+
+-- Staging (separate DB + user — never share with production)
+CREATE DATABASE klicklocal_staging CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'klicklocal_staging'@'localhost' IDENTIFIED BY 'STRONG_STAGING_PASSWORD';
+GRANT ALL PRIVILEGES ON klicklocal_staging.* TO 'klicklocal_staging'@'localhost';
+FLUSH PRIVILEGES;
 ```
 
-If it is **not** `php8.3-fpm.sock`, edit `deploy/nginx/api.gastrocycle.com.conf`
-and fix the `fastcgi_pass` line accordingly.
-
----
-
-## 2. Confirm DNS points to this server
-
-All three names must resolve to the server IP `167.233.19.131`:
-
-```bash
-dig +short gastrocycle.com
-dig +short api.gastrocycle.com
-dig +short admin.gastrocycle.com
-```
-
-Each should print `167.233.19.131`. If `dig` is missing: `sudo apt install -y dnsutils`.
-
-> If a name does not resolve yet, fix the DNS A record at your domain provider and
-> wait for it to propagate before doing SSL in step 9.
-
----
-
-## 3. Get the code onto the server
+## 3. Clone both environments
 
 ```bash
 sudo mkdir -p /var/www
-cd /var/www
-sudo git clone https://github.com/emretokatli/klicklocal.git klicklocal
-cd /var/www/klicklocal
+# Production tracks main
+sudo git clone -b main    https://github.com/emretokatli/klicklocal.git /var/www/klicklocal
+# Staging tracks develop
+sudo git clone -b develop https://github.com/emretokatli/klicklocal.git /var/www/klicklocal-staging
+sudo chown -R www-data:www-data /var/www/klicklocal /var/www/klicklocal-staging
 ```
 
-Replace `<YOUR_GIT_REPO_URL>` with your repo (e.g. `https://github.com/emretokatli/klicklocal.git`).
-If the repo is private, GitHub will ask for a username + a **personal access token** (not your password).
+## 4. Backend (run per environment)
 
-Give the web server user ownership (so PHP and Next.js can read/write):
-
-```bash
-sudo chown -R www-data:www-data /var/www/klicklocal
-```
-
----
-
-## 4. Create the database
-
-Open MySQL:
-
-```bash
-sudo mysql
-```
-
-Paste this (change the password to something strong and keep it for step 5):
-
-```sql
-CREATE DATABASE klicklocal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'klicklocal'@'localhost' IDENTIFIED BY 'yjvAfK.GGSE32Um';
-GRANT ALL PRIVILEGES ON klicklocal.* TO 'klicklocal'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-```
-
----
-
-## 5. Set up the Laravel backend
+Production (`/var/www/klicklocal/backend`):
 
 ```bash
 cd /var/www/klicklocal/backend
-
-# Install PHP dependencies (production, no dev tools)
 composer install --no-dev --optimize-autoloader
-
-# Create the production .env from the template in this repo
 cp ../deploy/env/backend.env.production.example .env
-```
-
-Now edit `.env` and set `DB_PASSWORD` to the password from step 4:
-
-```bash
-nano .env
-```
-
-(In nano: edit, then `Ctrl+O`, `Enter` to save, `Ctrl+X` to exit.)
-
-Generate the app key and finish setup:
-
-```bash
+nano .env                       # set DB_PASSWORD + secrets
 php artisan key:generate
 php artisan migrate --force
 php artisan db:seed --force
 php artisan storage:link
-php artisan config:cache
-php artisan route:cache
+php artisan config:cache && php artisan route:cache
 ```
 
-Make sure Laravel can write to its folders:
+Staging is identical but uses `backend.env.staging.example` in
+`/var/www/klicklocal-staging/backend`.
+
+## 5. Frontend (run per environment)
+
+Production:
 
 ```bash
-sudo chown -R www-data:www-data /var/www/klicklocal/backend/storage /var/www/klicklocal/backend/bootstrap/cache
-sudo chmod -R 775 /var/www/klicklocal/backend/storage /var/www/klicklocal/backend/bootstrap/cache
-```
-
-The seed creates an admin login: `admin@klicklocal.test` / `password`.
-
----
-
-## 6. Set up the Next.js frontend
-
-```bash
-cd /var/www/klicklocal/frontendf
-
-# Production env (proxy mode -> talks to api.gastrocycle.com server-side)
+cd /var/www/klicklocal/frontend
 cp ../deploy/env/frontend.env.production.example .env.local
-
-npm install
-npm run build
+npm install && npm run build
 ```
 
----
+Staging uses `frontend.env.staging.example` in `/var/www/klicklocal-staging/frontend`.
 
-## 7. Keep the frontend + queue worker always running
-
-**Frontend (systemd - recommended):**
+## 6. Processes (systemd + supervisor)
 
 ```bash
-sudo cp /var/www/klicklocal/deploy/systemd/klicklocal-frontend.service /etc/systemd/system/
+# Frontend (prod on :3000, staging on :3001)
+sudo cp /var/www/klicklocal/deploy/systemd/klicklocal-frontend.service          /etc/systemd/system/
+sudo cp /var/www/klicklocal/deploy/systemd/klicklocal-frontend-staging.service  /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now klicklocal-frontend
-sudo systemctl status klicklocal-frontend     # should say "active (running)"
+sudo systemctl enable --now klicklocal-frontend klicklocal-frontend-staging
+
+# Queue workers
+sudo cp /var/www/klicklocal/deploy/supervisor/klicklocal-worker.conf          /etc/supervisor/conf.d/
+sudo cp /var/www/klicklocal/deploy/supervisor/klicklocal-worker-staging.conf  /etc/supervisor/conf.d/
+sudo supervisorctl reread && sudo supervisorctl update
 ```
 
-The app now listens on `127.0.0.1:3000`. Logs: `sudo journalctl -u klicklocal-frontend -f`.
-
-> Prefer pm2 instead? `sudo npm install -g pm2`, then
-> `cd /var/www/klicklocal/frontend && pm2 start npm --name klicklocal-frontend -- start && pm2 save && pm2 startup`.
-> Use one or the other, not both.
-
-**Queue worker (Supervisor - for scheduled posts / publishing):**
+## 7. Nginx (six vhosts)
 
 ```bash
-sudo cp /var/www/klicklocal/deploy/supervisor/klicklocal-worker.conf /etc/supervisor/conf.d/
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl status                      # should show klicklocal-worker RUNNING
-```
-
----
-
-## 8. Wire up Nginx (the three domains)
-
-```bash
-# Copy all three site configs
-sudo cp /var/www/klicklocal/deploy/nginx/api.gastrocycle.com.conf   /etc/nginx/sites-available/
-sudo cp /var/www/klicklocal/deploy/nginx/gastrocycle.com.conf       /etc/nginx/sites-available/
-sudo cp /var/www/klicklocal/deploy/nginx/admin.gastrocycle.com.conf /etc/nginx/sites-available/
-
-# Enable them
-sudo ln -s /etc/nginx/sites-available/api.gastrocycle.com.conf   /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/gastrocycle.com.conf       /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/admin.gastrocycle.com.conf /etc/nginx/sites-enabled/
-
-# Optional: remove the default placeholder site
+for c in api klicklocal admin api-test test admin-test; do
+  f=$([ "$c" = "klicklocal" ] && echo klicklocal.app.conf || echo "$c.klicklocal.app.conf")
+  sudo cp /var/www/klicklocal/deploy/nginx/$f /etc/nginx/sites-available/
+  sudo ln -sf /etc/nginx/sites-available/$f /etc/nginx/sites-enabled/
+done
 sudo rm -f /etc/nginx/sites-enabled/default
-
-# Test the config, then reload
-sudo nginx -t
-sudo systemctl reload nginx
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-If `nginx -t` complains about the PHP socket, re-check step 1 (`ls /run/php/`) and fix
-the `fastcgi_pass` line in `api.gastrocycle.com.conf`, then copy + reload again.
-
----
-
-## 9. Enable HTTPS (free SSL via Let's Encrypt)
+## 8. HTTPS (Let's Encrypt)
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-
 sudo certbot --nginx \
-  -d gastrocycle.com -d www.gastrocycle.com \
-  -d api.gastrocycle.com -d admin.gastrocycle.com
-```
-
-Choose "redirect HTTP to HTTPS" when asked. Then confirm auto-renewal works:
-
-```bash
+  -d klicklocal.app -d www.klicklocal.app -d admin.klicklocal.app -d api.klicklocal.app \
+  -d test.klicklocal.app -d admin-test.klicklocal.app -d api-test.klicklocal.app
 sudo certbot renew --dry-run
 ```
 
----
-
-## 10. Test everything
-
-**Backend health** (open in a browser or use curl):
+## 9. Verify
 
 ```bash
-curl https://api.gastrocycle.com/up
+curl https://api.klicklocal.app/up           # production health
+curl https://api-test.klicklocal.app/up       # staging health
 ```
 
-**Login API:**
-
-```bash
-curl -X POST "https://api.gastrocycle.com/api/v1/auth/login" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{"email":"admin@klicklocal.test","password":"password"}'
-```
-
-Expected: a JSON response containing a token.
-
-**In the browser:**
-
-1. `https://gastrocycle.com/` -> landing page loads.
-2. `https://admin.gastrocycle.com/login` -> sign in with `admin@klicklocal.test` / `password`.
-3. Dashboard loads workspaces + billing.
-4. Create a workspace, upload media, create a post, schedule it, then "Publish now".
-
-If something fails, check logs:
-
-```bash
-sudo tail -n 50 /var/www/klicklocal/backend/storage/logs/laravel.log
-sudo journalctl -u klicklocal-frontend -n 50
-sudo tail -n 50 /var/log/nginx/error.log
-```
+Then in a browser: `https://klicklocal.app` (customer), `https://admin.klicklocal.app/login`,
+and the staging equivalents.
 
 ---
 
-## 11. Instagram (do this later, after the basics work)
-
-In the Meta app, register this exact OAuth redirect URI:
-
-```
-https://api.gastrocycle.com/api/v1/social-accounts/instagram/callback
-```
-
-Then in `backend/.env` set:
-
-```env
-SOCIAL_INSTAGRAM_DRIVER=api
-INSTAGRAM_ENABLED=true
-INSTAGRAM_APP_ID=your_instagram_app_id
-INSTAGRAM_APP_SECRET=your_instagram_app_secret
-```
-
-Apply the changes:
+## Deploying new code
 
 ```bash
-cd /var/www/klicklocal/backend
-php artisan config:clear
-php artisan config:cache
+# Production — only from main
+cd /var/www/klicklocal && sudo -u www-data git pull origin main
+cd backend  && composer install --no-dev --optimize-autoloader && php artisan migrate --force \
+            && php artisan config:cache && php artisan route:cache
+cd ../frontend && npm install && npm run build
+sudo systemctl restart klicklocal-frontend && sudo supervisorctl restart klicklocal-worker
+
+# Staging — only from develop
+cd /var/www/klicklocal-staging && sudo -u www-data git pull origin develop
+cd backend  && composer install --no-dev --optimize-autoloader && php artisan migrate --force \
+            && php artisan config:cache && php artisan route:cache
+cd ../frontend && npm install && npm run build
+sudo systemctl restart klicklocal-frontend-staging && sudo supervisorctl restart klicklocal-worker-staging
 ```
 
----
+## Instagram OAuth redirect URIs
 
-## Updating later (new code from git)
+Register both in the Meta app (see `docs/META-INSTAGRAM-SETUP.md`):
 
-```bash
-cd /var/www/klicklocal
-sudo -u www-data git pull
-
-cd backend
-composer install --no-dev --optimize-autoloader
-php artisan migrate --force
-php artisan config:cache && php artisan route:cache
-sudo supervisorctl restart klicklocal-worker
-
-cd ../frontend
-npm install
-npm run build
-sudo systemctl restart klicklocal-frontend
+```
+https://api.klicklocal.app/api/v1/social-accounts/instagram/callback        (production)
+https://api-test.klicklocal.app/api/v1/social-accounts/instagram/callback   (staging)
 ```
 
----
-
-## Quick troubleshooting
+## Troubleshooting
 
 | Symptom | Likely fix |
 |---------|-----------|
-| `502 Bad Gateway` on api domain | Wrong PHP socket in `fastcgi_pass`; re-check `ls /run/php/` |
-| `502` on landing/admin domain | Next.js not running: `sudo systemctl status klicklocal-frontend` |
-| Login fails / "Cannot reach the API server" | `BACKEND_API_URL` wrong in `frontend/.env.local`; rebuild + restart |
+| `502` on an api domain | Wrong PHP socket in `fastcgi_pass`; re-check `ls /run/php/` |
+| `502` on app/admin domain | Next.js not running: `systemctl status klicklocal-frontend[-staging]` |
+| "Cannot reach the API server" | `BACKEND_API_URL` wrong in that env's `frontend/.env.local`; rebuild + restart |
 | `500` from Laravel | `storage/` not writable, or run `php artisan config:clear`; check `laravel.log` |
-| SSL fails in certbot | DNS not yet pointing to the server (step 2), or port 80 blocked |
-| DB connection error | `DB_PASSWORD` in `.env` does not match the MySQL user from step 4 |
+| DB connection error | `DB_PASSWORD` mismatch, or prod/staging pointing at the wrong database |

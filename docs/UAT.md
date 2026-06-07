@@ -1,64 +1,57 @@
-# UAT environment
+# Staging environment
 
-**Deploying on webspace?** → **[UAT-WEBSPACE-DEPLOY.md](UAT-WEBSPACE-DEPLOY.md)** (document root, `.env`, artisan, checks).
+> Staging replaces the old "UAT" environment. It deploys from the **`develop`**
+> branch and is fully isolated from production.
 
-Remote MySQL (IONOS webspace-host, MySQL 8.0):
+| Item | Value |
+|------|-------|
+| Customer app | `https://test.klicklocal.app` |
+| Admin | `https://admin-test.klicklocal.app` |
+| API | `https://api-test.klicklocal.app` |
+| Branch | `develop` |
+| Database | `klicklocal_staging` (isolated from production) |
 
-| Setting  | Value |
-|----------|--------|
-| Host     | `database-5020578088.webspace-host.com` |
-| Database | `dbs15734238` |
-| User     | `dbu1020849` |
-| Port     | `3306` |
+Full server setup: **[../deploy/README.md](../deploy/README.md)**.
 
-Credentials live in **`backend/.env.uat`** (gitignored). Template: **`backend/.env.uat.example`**.
+Env templates:
 
-## 1. Database tables
+- Backend: `backend/.env.uat.example` (and `deploy/env/backend.env.staging.example`)
+- Frontend: `frontend/.env.uat.example` (and `deploy/env/frontend.env.staging.example`)
+- Mobile: `mobile/.env.uat.example`
 
-Import once in phpMyAdmin (database `dbs15734238`):
+## Run staging config locally (against the staging API)
 
-`backend/database/sql/klicklocal_uat_schema.sql`
+**Frontend** (proxy to the staging API):
 
-## 2. Use UAT config locally
+```powershell
+cd frontend
+copy .env.uat.local .env.local
+npm run dev
+```
 
-**Backend** (talks to remote UAT DB):
+**Backend** — point a local Laravel at the staging database only if the staging
+DB allows your IP (the dedicated server normally does not). Prefer running
+backend changes on the staging server itself via the runbook.
 
 ```powershell
 cd backend
 copy .env.uat .env
 php artisan config:clear
-php artisan db:seed
 ```
 
-**Frontend** (after you set your public UAT hostname):
-
-```powershell
-cd frontend
-copy .env.uat.local .env.local
-# Edit .env.local — replace YOUR_UAT_DOMAIN with e.g. uat.example.com
-npm run dev
-```
-
-## 3. Replace placeholders
-
-In `backend/.env.uat` and `frontend/.env.uat.local`, set:
-
-- UAT domain: **`gastrocycle.com`** (see `backend/.env.uat` and `frontend/.env.uat.local`)
-- `APP_URL`, `L5_SWAGGER_CONST_HOST`, `SANCTUM_STATEFUL_DOMAINS` in backend
-- `NEXT_PUBLIC_API_URL` in frontend
-
-## 4. Switch back to local dev
+## Switch back to local dev
 
 ```powershell
 cd backend
-copy .env.example .env
-# restore local DB_* and run php artisan config:clear
+copy .env.example .env   # restore local DB_* + APP_URL, then: php artisan config:clear
 
 cd ..\frontend
 copy .env.local.example .env.local
 ```
 
-## Security
+## Rules
 
-- Do not commit `.env.uat` or `.env.uat.local` with real passwords.
-- Rotate the DB password if it was shared in chat.
+- Production and staging databases stay **isolated** — never point staging `.env`
+  at the production database.
+- No localhost URLs in deployed envs; all endpoints come from environment variables.
+- Do not commit `.env.uat` / `.env.uat.local` with real passwords.

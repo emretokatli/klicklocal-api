@@ -1,65 +1,71 @@
 # Deploy frontend to Vercel
 
-Repository: [github.com/emretokatli/klicklocal](https://github.com/emretokatli/klicklocal)  
-Backend (UAT): `https://gastrocycle.com/public/api/v1`
+Repository: [github.com/emretokatli/klicklocal](https://github.com/emretokatli/klicklocal)
+
+| Environment | Branch | Frontend | API |
+|-------------|--------|----------|-----|
+| Production | `main` | `https://klicklocal.app` / `https://admin.klicklocal.app` | `https://api.klicklocal.app/api/v1` |
+| Staging | `develop` | `https://test.klicklocal.app` / `https://admin-test.klicklocal.app` | `https://api-test.klicklocal.app/api/v1` |
+
+> Self-hosting on the Ubuntu server instead? Use [`deploy/README.md`](../deploy/README.md).
 
 ## 1. Import project in Vercel
 
 1. [vercel.com](https://vercel.com) → **Add New Project**
 2. Import **emretokatli/klicklocal**
 3. Framework: **Next.js** (auto-detected)
-4. Root directory: **`.`** (repo root is already the Next app)
+4. Root directory: **`frontend`**
+5. **Production Branch:** `main`. Add `develop` as a tracked branch for staging deployments.
 
 ## 2. Environment variables
 
-In **Project → Settings → Environment Variables**, add for **Production** (and Preview if you want):
+In **Project → Settings → Environment Variables**, scope values per Vercel
+environment. Never hardcode endpoints in code — they all come from these vars.
 
-### Recommended (proxy — no CORS setup)
-
-| Name | Value | Required |
-|------|--------|----------|
-| `NEXT_PUBLIC_API_URL` | `/api/v1` | Yes |
-| `BACKEND_API_URL` | `https://gastrocycle.com/public/api/v1` | **Yes** — without this, login fails with `ECONNREFUSED 127.0.0.1:1981` |
-| `NEXT_PUBLIC_STORAGE_URL` | `https://gastrocycle.com/public/storage` | Yes |
-
-The app calls `/api/v1` on your Vercel domain; Next.js forwards to Laravel (`src/app/api/v1/[...path]/route.ts`).
-
-> **Login 500?** Vercel logs show `connect ECONNREFUSED 127.0.0.1:1981` → add `BACKEND_API_URL` above and redeploy.
-
-### Alternative (direct API — your request)
+### Production (scope: Production, git branch `main`)
 
 | Name | Value |
 |------|--------|
-| `NEXT_PUBLIC_API_URL` | `https://gastrocycle.com/public/api/v1` |
-| `NEXT_PUBLIC_STORAGE_URL` | `https://gastrocycle.com/public/storage` |
+| `NEXT_PUBLIC_API_URL` | `/api/v1` |
+| `BACKEND_API_URL` | `https://api.klicklocal.app/api/v1` |
+| `NEXT_PUBLIC_STORAGE_URL` | `https://api.klicklocal.app/storage` |
 
-Also add your Vercel URL to the **backend** `.env` on Strato:
+### Staging (scope: Preview, git branch `develop`)
 
-```env
-CORS_ALLOWED_ORIGINS=https://gastrocycle.com,https://www.gastrocycle.com,https://YOUR-APP.vercel.app
-```
+| Name | Value |
+|------|--------|
+| `NEXT_PUBLIC_API_URL` | `/api/v1` |
+| `BACKEND_API_URL` | `https://api-test.klicklocal.app/api/v1` |
+| `NEXT_PUBLIC_STORAGE_URL` | `https://api-test.klicklocal.app/storage` |
 
-Then on the server: `php artisan config:clear`
+The app calls `/api/v1` on its own Vercel domain; Next.js forwards server-side to
+Laravel (`src/app/api/v1/[...path]/route.ts`), so there is no browser CORS.
 
-(`*.vercel.app` is already allowed via `config/cors.php` patterns after you deploy the latest backend.)
+> **Login 502 / "Cannot reach the API server"?** `BACKEND_API_URL` is missing or
+> wrong for that environment — set it (table above) and redeploy.
 
-## 3. Deploy
+### Alternative (browser calls Laravel directly)
 
-Click **Deploy**. Build command: `npm run build` (default).
+| Name | Production value |
+|------|------------------|
+| `NEXT_PUBLIC_API_URL` | `https://api.klicklocal.app/api/v1` |
+| `NEXT_PUBLIC_STORAGE_URL` | `https://api.klicklocal.app/storage` |
+
+`*.klicklocal.app` is already allowed via `backend/config/cors.php` patterns.
+
+## 3. Custom domains
+
+In Vercel → **Domains**:
+
+- Production project/branch `main` → `klicklocal.app`, `admin.klicklocal.app`
+- Staging (preview) branch `develop` → `test.klicklocal.app`, `admin-test.klicklocal.app`
 
 ## 4. Verify
 
-1. Open your Vercel URL → `/login`
-2. Sign in: `admin@klicklocal.test` / `password`
-3. Dashboard loads workspaces / billing
-
-If login fails with a network/CORS error, switch to the **proxy** env vars (table above).
-
-## 5. Custom domain (optional)
-
-Vercel → **Domains** → add e.g. `app.gastrocycle.com`  
-Add that origin to backend `CORS_ALLOWED_ORIGINS` if using direct API mode.
+1. Open the domain → `/login`
+2. Sign in with your seeded admin
+3. Dashboard loads workspaces
 
 ## Local reference
 
-See `frontend/.env.production.example` and `frontend/.env.uat.example`.
+See `frontend/.env.production.example` (production) and `frontend/.env.uat.example` (staging).

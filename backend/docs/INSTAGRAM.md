@@ -11,10 +11,11 @@ SOCIAL_INSTAGRAM_DRIVER=api
 INSTAGRAM_ENABLED=true
 INSTAGRAM_APP_ID=your_instagram_app_id
 INSTAGRAM_APP_SECRET=your_instagram_app_secret
-INSTAGRAM_REDIRECT_URI=https://your-domain/public/api/v1/social-accounts/instagram/callback
-INSTAGRAM_FRONTEND_REDIRECT=https://your-frontend/social-accounts
-FRONTEND_URL=https://your-frontend
-INSTAGRAM_MEDIA_PUBLIC_BASE_URL=https://your-domain/public/storage
+# Production example (staging uses api-test.klicklocal.app / test.klicklocal.app)
+INSTAGRAM_REDIRECT_URI=https://api.klicklocal.app/api/v1/social-accounts/instagram/callback
+INSTAGRAM_FRONTEND_REDIRECT=https://klicklocal.app/social-accounts
+FRONTEND_URL=https://klicklocal.app
+INSTAGRAM_MEDIA_PUBLIC_BASE_URL=https://api.klicklocal.app/storage
 ```
 
 Use the **Instagram App ID** from Meta → Instagram → API setup with Instagram login (not the Facebook App ID).

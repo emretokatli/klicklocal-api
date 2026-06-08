@@ -15,6 +15,19 @@ class BusinessProfile extends Model
         'description',
         'tone_of_voice',
         'products_services',
+        'website',
+        'team_size',
+        'monthly_revenue',
+        'customer_source',
+        'social_media_channels',
+        'target_audience',
+        'unique_value_proposition',
+        'additional_notes',
+        'primary_goal',
+    ];
+
+    protected $casts = [
+        'social_media_channels' => 'array',
     ];
 
     public function workspace(): BelongsTo
@@ -25,7 +38,6 @@ class BusinessProfile extends Model
     public function isComplete(): bool
     {
         return filled($this->business_name)
-            && filled($this->business_type)
-            && filled($this->city);
+            && filled($this->business_type);
     }
 }

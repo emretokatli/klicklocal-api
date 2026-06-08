@@ -25,6 +25,9 @@ class User extends Authenticatable
         'email',
         'password',
         'avatar',
+        'onboarding_step',
+        'onboarding_data',
+        'onboarding_completed_at',
     ];
 
     /**
@@ -42,8 +45,15 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'onboarding_completed_at' => 'datetime',
+            'onboarding_data' => 'array',
             'password' => 'hashed',
         ];
+    }
+
+    public function hasCompletedOnboarding(): bool
+    {
+        return $this->onboarding_completed_at !== null;
     }
 
     public function ownedWorkspaces(): HasMany

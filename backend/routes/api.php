@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\StripeWebhookController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TikTokSocialAccountController;
 use App\Http\Controllers\Api\V1\UsageController;
+use App\Http\Controllers\Api\V1\WebsiteAnalysisController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,13 +34,20 @@ Route::prefix('v1')->group(function (): void {
     Route::post('webhooks/stripe', [StripeWebhookController::class, 'handle'])
         ->middleware('stripe.webhook');
 
+    Route::post('onboarding/analyze-website', [WebsiteAnalysisController::class, 'analyze'])
+        ->middleware('throttle:6,1');
+
     Route::prefix('auth')->group(function (): void {
         Route::post('register', [AuthController::class, 'register']);
+        Route::post('register-email', [AuthController::class, 'registerEmail']);
         Route::post('login', [AuthController::class, 'login']);
 
         Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('logout', [AuthController::class, 'logout']);
             Route::get('me', [AuthController::class, 'me']);
+            Route::get('onboarding', [AuthController::class, 'onboardingStatus']);
+            Route::patch('onboarding', [AuthController::class, 'updateOnboarding']);
+            Route::post('onboarding/complete', [AuthController::class, 'completeOnboarding']);
         });
     });
 

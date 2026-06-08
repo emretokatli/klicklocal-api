@@ -19,7 +19,9 @@ class AuthService
         private readonly SubscriptionService $subscriptions,
         private readonly FeatureAccessService $features,
         private readonly BillingService $billing,
+        private readonly UserOnboardingService $userOnboarding,
     ) {}
+
     /**
      * @param  array{name: string, email: string, password: string}  $data
      * @return array{user: User, token: string}
@@ -30,6 +32,8 @@ class AuthService
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $data['password'],
+            'onboarding_completed_at' => now(),
+            'onboarding_step' => 'completed',
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
@@ -41,6 +45,14 @@ class AuthService
     }
 
     /**
+     * @return array{user: User, token: string, resumed: bool}
+     */
+    public function registerWithEmail(string $email): array
+    {
+        return $this->userOnboarding->registerWithEmail($email);
+    }
+
+    /**
      * @param  array{email: string, password: string}  $credentials
      * @return array{user: User, token: string}
      *
@@ -49,6 +61,12 @@ class AuthService
     public function login(array $credentials): array
     {
         $user = User::where('email', $credentials['email'])->first();
+
+        if ($user && $user->password === null) {
+            throw ValidationException::withMessages([
+                'email' => ['Please continue your registration using the same email address.'],
+            ]);
+        }
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
@@ -101,6 +119,27 @@ class AuthService
                 ? $this->subscriptions->limitsForWorkspace($workspace)
                 : $this->subscriptions->limitsForUser($user),
             'billing' => $billing,
+            'onboarding_completed' => $user->hasCompletedOnboarding(),
+            'onboarding_step' => $user->onboarding_step,
+            'onboarding_data' => $user->onboarding_data ?? [],
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{user: User, workspace: Workspace}
+     */
+    public function completeOnboarding(User $user, array $data): array
+    {
+        return $this->userOnboarding->complete($user, $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{user: User}
+     */
+    public function updateOnboardingProgress(User $user, string $step, array $data = []): array
+    {
+        return $this->userOnboarding->saveProgress($user, $step, $data);
     }
 }

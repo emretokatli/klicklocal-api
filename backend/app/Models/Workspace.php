@@ -84,4 +84,9 @@ class Workspace extends Model
     {
         return $this->hasMany(Invoice::class);
     }
+
+    public function quotaAddons(): HasMany
+    {
+        return $this->hasMany(QuotaAddon::class);
+    }
 }

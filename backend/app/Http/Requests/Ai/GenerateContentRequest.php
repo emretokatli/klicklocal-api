@@ -20,6 +20,10 @@ class GenerateContentRequest extends FormRequest
             'workspace_id' => ['required', 'integer', 'exists:workspaces,id'],
             'media_id' => ['nullable', 'integer', 'exists:media,id'],
             'prompt' => ['nullable', 'string', 'max:1000'],
+            'platform' => ['nullable', 'string', 'in:instagram,facebook,tiktok,linkedin'],
+            'content_type' => ['nullable', 'string', 'in:post,reel,story,video'],
+            'language' => ['nullable', 'string', 'in:de,en'],
+            'seo_focus' => ['nullable', 'string', 'max:100'],
         ];
     }
 }

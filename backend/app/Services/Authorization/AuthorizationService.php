@@ -78,7 +78,10 @@ class AuthorizationService
     public function abilitiesForUser(User $user, ?Workspace $workspace = null): array
     {
         $this->clearWorkspaceTeam();
-        $platformRoles = $user->getRoleNames()->toArray();
+        $platformRoles = array_values(array_intersect(
+            $user->getRoleNames()->toArray(),
+            PlatformRole::all(),
+        ));
         $platformPermissions = $user->getAllPermissions()
             ->pluck('name')
             ->unique()

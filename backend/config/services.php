@@ -21,6 +21,11 @@ return [
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
         'timeout' => (int) env('OPENAI_TIMEOUT', 60),
     ],
+    'revenuecat' => [
+        // Must match the Authorization header value configured in the RevenueCat dashboard.
+        'webhook_auth_token' => env('REVENUECAT_WEBHOOK_AUTH_TOKEN'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

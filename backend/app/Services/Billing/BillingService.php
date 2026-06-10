@@ -2,6 +2,7 @@
 
 namespace App\Services\Billing;
 
+use App\Models\Transaction;
 use App\Models\Workspace;
 use App\Services\Subscription\PlanService;
 
@@ -44,5 +45,18 @@ class BillingService
     public function invoices(Workspace $workspace)
     {
         return $this->invoices->listForWorkspace($workspace);
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, Transaction>
+     */
+    public function transactions(Workspace $workspace)
+    {
+        $subscriptionIds = $workspace->subscriptions()->pluck('id');
+
+        return Transaction::query()
+            ->whereIn('subscription_id', $subscriptionIds)
+            ->latest()
+            ->get();
     }
 }

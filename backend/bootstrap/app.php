@@ -21,7 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \App\Http\Middleware\EnsurePermission::class,
             'feature.quota' => \App\Http\Middleware\EnsureFeatureQuota::class,
             'workspace.subscription' => \App\Http\Middleware\EnsureWorkspaceSubscription::class,
+            'subscription.required' => \App\Http\Middleware\EnsureWorkspaceSubscription::class,
             'stripe.webhook' => \App\Http\Middleware\VerifyStripeWebhook::class,
+            'revenuecat.webhook' => \App\Http\Middleware\VerifyRevenueCatWebhook::class,
         ]);
 
         // API uses Bearer tokens — never redirect to a non-existent "login" web route.

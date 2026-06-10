@@ -52,8 +52,10 @@ return [
     */
     'capabilities' => [
         'facebook' => ['publish', 'refresh_token', 'validate_account'],
-        'instagram' => ['publish', 'refresh_token', 'validate_account'],
+        'instagram' => ['publish', 'refresh_token', 'validate_account', 'fetch_comments'],
         'linkedin' => ['publish', 'refresh_token', 'validate_account'],
+        // TODO(tiktok): add 'fetch_comments' once a TikTok provider implements
+        // App\Services\SocialProviders\Contracts\FetchesComments.
     ],
 
 ];

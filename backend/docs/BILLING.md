@@ -33,6 +33,7 @@ $features->assertCanUseFeature($workspace, PlanFeature::AiGeneration);
 | `feature.quota:{key}` | Block request when quota exceeded |
 | `workspace.subscription` | Require active subscription |
 | `stripe.webhook` | Verify Stripe webhook signature |
+| `revenuecat.webhook` | Verify RevenueCat webhook Authorization header |
 
 ## Customer API (requires `workspace_id` / `X-Workspace-Id`)
 
@@ -57,6 +58,25 @@ $features->assertCanUseFeature($workspace, PlanFeature::AiGeneration);
 - Webhook: `POST /api/v1/webhooks/stripe`
 - Configure `STRIPE_WEBHOOK_SECRET`, `STRIPE_KEY`, `STRIPE_SECRET` in `.env`
 - Handler: `StripeWebhookHandler` (subscription + invoice events)
+
+## RevenueCat (mobile in-app purchases)
+
+- Webhook: `POST /api/v1/webhooks/revenuecat`
+- Configure `REVENUECAT_WEBHOOK_AUTH_TOKEN` in `.env` — must match the Authorization header value set in the RevenueCat dashboard
+- Handler: `RevenueCatWebhookService` (`app/Services/Billing/`)
+- Mobile calls RevenueCat `logIn()` with the **workspace id**, so `event.app_user_id` maps to a workspace
+- Plans map to store products via the nullable `plans.store_product_ids` JSON column (Apple/Google product identifiers, editable through the admin plans API)
+- Event ids are stored in `revenuecat_webhook_events`; replayed events are no-ops
+- Event → subscription state:
+
+| Event | Result |
+|-------|--------|
+| `INITIAL_PURCHASE` / `RENEWAL` / `UNCANCELLATION` / `PRODUCT_CHANGE` | Active subscription on the mapped plan, `ends_at`/`renewal_at` from `expiration_at_ms`; transaction recorded for purchase/renewal |
+| `CANCELLATION` | Cancel at period end (`cancelled_at` set, status stays `active` until expiry) |
+| `EXPIRATION` | Status `expired` — gated endpoints return 402 |
+| `BILLING_ISSUE` | Status `past_due` (access retained) + failed transaction recorded |
+
+Unknown workspaces/products are logged and acked with 200 so RevenueCat does not retry indefinitely.
 
 ## New workspace
 

@@ -55,4 +55,85 @@ class AdminApiTest extends TestCase
             ->getJson('/api/v1/admin/ai-prompts')
             ->assertOk();
     }
+
+    public function test_super_admin_can_assign_platform_role(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(\App\Support\TeamContext::PLATFORM);
+
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole(PlatformRole::SUPER_ADMIN);
+
+        $customer = User::factory()->create();
+
+        $this->withHeaders($this->authHeaders($superAdmin))
+            ->putJson("/api/v1/admin/users/{$customer->id}/roles", [
+                'roles' => ['admin'],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.user.platform_roles', ['admin']);
+    }
+
+    public function test_super_admin_can_revoke_platform_roles_with_empty_array(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(\App\Support\TeamContext::PLATFORM);
+
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole(PlatformRole::SUPER_ADMIN);
+
+        $customer = User::factory()->create();
+        $customer->assignRole(PlatformRole::SUPPORT);
+
+        $this->withHeaders($this->authHeaders($superAdmin))
+            ->putJson("/api/v1/admin/users/{$customer->id}/roles", [
+                'roles' => [],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.user.platform_roles', []);
+    }
+
+    public function test_super_admin_cannot_assign_workspace_role_as_platform_role(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(\App\Support\TeamContext::PLATFORM);
+
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole(PlatformRole::SUPER_ADMIN);
+
+        $customer = User::factory()->create();
+
+        $this->withHeaders($this->authHeaders($superAdmin))
+            ->putJson("/api/v1/admin/users/{$customer->id}/roles", [
+                'roles' => ['owner'],
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['roles.0']);
+    }
+
+    public function test_non_super_admin_cannot_update_platform_roles(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(\App\Support\TeamContext::PLATFORM);
+
+        $admin = User::factory()->create();
+        $admin->assignRole(PlatformRole::ADMIN);
+
+        $customer = User::factory()->create();
+
+        $this->withHeaders($this->authHeaders($admin))
+            ->putJson("/api/v1/admin/users/{$customer->id}/roles", [
+                'roles' => ['support'],
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_registered_customer_is_not_platform_admin(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(\App\Support\TeamContext::PLATFORM);
+
+        $customer = User::factory()->create();
+
+        $this->withHeaders($this->authHeaders($customer))
+            ->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.is_platform_admin', false)
+            ->assertJsonPath('data.abilities.platform_roles', []);
+    }
 }

@@ -43,6 +43,8 @@ class FeatureAccessService
             return true;
         }
 
+        $limit += $this->usageService->getAddonAmount($workspace, $feature);
+
         return $this->getUsage($workspace, $feature) < $limit;
     }
 
@@ -61,7 +63,13 @@ class FeatureAccessService
             return filter_var($value, FILTER_VALIDATE_BOOLEAN);
         }
 
-        return (int) $value;
+        $limit = (int) $value;
+
+        if (! $feature->isUnlimited($limit)) {
+            $limit += $this->usageService->getAddonAmount($workspace, $feature);
+        }
+
+        return $limit;
     }
 
     public function getUsage(Workspace $workspace, string|PlanFeature $featureKey): int
@@ -120,6 +128,7 @@ class FeatureAccessService
                 'used' => $this->getUsage($workspace, $feature),
                 'limit' => $this->getFeatureLimit($workspace, $feature),
                 'remaining' => $this->remaining($workspace, $feature),
+                'addon' => $this->usageService->getAddonAmount($workspace, $feature),
             ];
         }
 

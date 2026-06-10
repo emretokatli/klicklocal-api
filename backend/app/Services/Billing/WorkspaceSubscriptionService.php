@@ -95,6 +95,44 @@ class WorkspaceSubscriptionService
         return $subscription->load('plan.features');
     }
 
+    public function grantDemoPeriod(Workspace $workspace, int $days, ?User $actor = null): Subscription
+    {
+        Subscription::query()
+            ->where('workspace_id', $workspace->id)
+            ->whereIn('status', [SubscriptionStatus::Active, SubscriptionStatus::Trialing])
+            ->update([
+                'status' => SubscriptionStatus::Cancelled,
+                'cancelled_at' => now(),
+            ]);
+
+        $plan = Plan::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->first();
+
+        if ($plan === null) {
+            throw ValidationException::withMessages([
+                'plan' => ['No active plan found to assign demo to.'],
+            ]);
+        }
+
+        $endsAt = now()->addDays($days);
+
+        $subscription = Subscription::create([
+            'workspace_id' => $workspace->id,
+            'plan_id' => $plan->id,
+            'provider' => BillingProvider::Manual,
+            'status' => SubscriptionStatus::Trialing,
+            'billing_cycle' => 'monthly',
+            'trial_ends_at' => $endsAt,
+            'ends_at' => $endsAt,
+            'starts_at' => now(),
+            'metadata' => ['demo' => true, 'granted_by' => $actor?->id],
+        ]);
+
+        return $subscription->load('plan.features');
+    }
+
     public function cancel(Subscription $subscription): Subscription
     {
         $subscription->update([

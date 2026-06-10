@@ -4,6 +4,7 @@ namespace App\Services\Ai;
 
 use App\Services\Ai\Contracts\OpenAiClientInterface;
 use App\Services\Ai\DTOs\GeneratedContentDTO;
+use App\Services\Ai\DTOs\GeneratedImageDTO;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
@@ -52,6 +53,10 @@ class OpenAiClient implements OpenAiClientInterface
             ]);
 
         if ($response->failed()) {
+            \Illuminate\Support\Facades\Log::error('OpenAI generateContent failed', [
+                'status' => $response->status(),
+                'body'   => $response->json() ?? $response->body(),
+            ]);
             throw ValidationException::withMessages([
                 'ai' => ['The AI provider returned an error. Please try again.'],
             ]);
@@ -76,6 +81,52 @@ class OpenAiClient implements OpenAiClientInterface
             model: (string) ($payload['model'] ?? $this->model),
             tokensUsed: (int) data_get($payload, 'usage.total_tokens', 0),
             raw: $parsed,
+        );
+    }
+
+    public function generateImage(
+        string $prompt,
+        array $context = [],
+        string $size = '1024x1024',
+        string $quality = 'standard',
+    ): GeneratedImageDTO {
+        if ($this->apiKey === '') {
+            throw ValidationException::withMessages([
+                'ai' => ['AI is not configured. Set OPENAI_API_KEY on the server.'],
+            ]);
+        }
+
+        $response = Http::withToken($this->apiKey)
+            ->timeout($this->timeout)
+            ->acceptJson()
+            ->post(rtrim($this->baseUrl, '/').'/images/generations', [
+                'model'   => 'gpt-image-1',
+                'prompt'  => $prompt,
+                'n'       => 1,
+                'size'    => $size,
+                'quality' => $quality,
+            ]);
+
+        if ($response->failed()) {
+            throw ValidationException::withMessages([
+                'ai' => ['Image generation failed. Please try again.'],
+            ]);
+        }
+
+        $payload = $response->json();
+        $imageUrl = data_get($payload, 'data.0.url', '');
+        $revisedPrompt = data_get($payload, 'data.0.revised_prompt', '');
+
+        if (empty($imageUrl)) {
+            throw ValidationException::withMessages([
+                'ai' => ['No image returned from AI provider.'],
+            ]);
+        }
+
+        return new GeneratedImageDTO(
+            imageUrl: $imageUrl,
+            model: 'gpt-image-1',
+            revisedPrompt: $revisedPrompt,
         );
     }
 

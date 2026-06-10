@@ -53,6 +53,30 @@ class SubscriptionController extends Controller
         );
     }
 
+    public function grantDemo(Request $request): JsonResponse
+    {
+        $this->authorize('create', Subscription::class);
+
+        $validated = $request->validate([
+            'workspace_id' => ['required', 'integer', 'exists:workspaces,id'],
+            'days' => ['required', 'integer', 'min:1', 'max:365'],
+        ]);
+
+        $workspace = Workspace::query()->findOrFail($validated['workspace_id']);
+
+        $subscription = $this->subscriptions->grantDemoPeriod(
+            $workspace,
+            $validated['days'],
+            $request->user(),
+        );
+
+        return ApiResponse::success(
+            ['subscription' => $subscription],
+            'Demo period granted.',
+            201,
+        );
+    }
+
     public function destroy(Subscription $subscription): JsonResponse
     {
         $this->authorize('viewAny', Subscription::class);

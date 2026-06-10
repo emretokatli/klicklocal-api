@@ -3,6 +3,7 @@
 namespace App\Services\Billing;
 
 use App\Enums\PlanFeature;
+use App\Models\QuotaAddon;
 use App\Models\SubscriptionUsage;
 use App\Models\Workspace;
 use Illuminate\Support\Carbon;
@@ -39,6 +40,15 @@ class SubscriptionUsageService
         $row->save();
 
         return $row;
+    }
+
+    public function getAddonAmount(Workspace $workspace, PlanFeature $feature): int
+    {
+        return (int) QuotaAddon::query()
+            ->where('workspace_id', $workspace->id)
+            ->where('feature_key', $feature->value)
+            ->active()
+            ->sum('amount');
     }
 
     /**

@@ -5,6 +5,8 @@ namespace App\Services\SocialProviders\Instagram;
 use App\Models\Post;
 use App\Models\SocialAccount;
 use App\Services\SocialProviders\Base\BaseSocialProvider;
+use App\Services\SocialProviders\Contracts\FetchesComments;
+use App\Services\SocialProviders\DTOs\CommentCollectionDTO;
 use App\Services\SocialProviders\DTOs\PublishResponseDTO;
 use App\Services\SocialProviders\Exceptions\SocialProviderException;
 use App\Enums\SocialAccountStatus;
@@ -13,13 +15,14 @@ use App\Enums\SocialAccountStatus;
  * Instagram Platform API provider (Business Login).
  * Feed image publishing via InstagramPublishingService. Reels/stories: future.
  */
-class InstagramProvider extends BaseSocialProvider
+class InstagramProvider extends BaseSocialProvider implements FetchesComments
 {
     public function __construct(
         SocialAccount $account,
         private readonly InstagramOAuthService $oauth,
         private readonly InstagramService $instagramService,
         private readonly InstagramPublishingService $publishing,
+        private readonly InstagramCommentService $comments,
     ) {
         parent::__construct($account);
     }
@@ -37,6 +40,16 @@ class InstagramProvider extends BaseSocialProvider
         $post->loadMissing('media');
 
         return $this->publishing->publishFeedPost($this->account, $post);
+    }
+
+    public function fetchComments(
+        SocialAccount $account,
+        string $providerMediaId,
+        ?string $since = null,
+    ): CommentCollectionDTO {
+        $this->ensureCapability('fetch_comments');
+
+        return $this->comments->fetchComments($account, $providerMediaId, $since);
     }
 
     public function validateAccount(): bool

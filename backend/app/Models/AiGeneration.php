@@ -12,6 +12,9 @@ class AiGeneration extends Model
         'user_id',
         'media_id',
         'prompt',
+        'platform',
+        'content_type',
+        'seo_focus',
         'caption',
         'story_text',
         'hashtags',
@@ -19,6 +22,9 @@ class AiGeneration extends Model
         'model',
         'tokens_used',
         'raw_response',
+        'generated_image_url',
+        'image_model',
+        'image_revised_prompt',
     ];
 
     protected function casts(): array

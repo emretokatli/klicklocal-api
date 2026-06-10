@@ -27,7 +27,7 @@ class AiContentGenerationService
     ) {}
 
     /**
-     * @param  array{media_id?: int|null, prompt?: string|null}  $data
+     * @param  array{media_id?: int|null, prompt?: string|null, platform?: string|null, content_type?: string|null, seo_focus?: string|null}  $data
      */
     public function generate(User $user, int $workspaceId, array $data): AiGeneration
     {
@@ -50,27 +50,33 @@ class AiContentGenerationService
         $mediaId = $data['media_id'] ?? null;
         $imageUrl = $this->resolveImageUrl($workspace, $mediaId);
 
-        $userPrompt = trim((string) ($data['prompt'] ?? ''));
+        $userPrompt  = trim((string) ($data['prompt'] ?? ''));
+        $platform    = $data['platform']    ?? 'instagram';
+        $contentType = $data['content_type'] ?? 'post';
+        $seoFocus    = $data['seo_focus']    ?? null;
 
         $generated = $this->client->generateContent(
-            $this->systemPrompt($profile),
-            $this->userPrompt($profile, $userPrompt),
+            $this->systemPrompt($profile, $platform, $contentType),
+            $this->userPrompt($profile, $userPrompt, $seoFocus),
             $imageUrl,
             $this->context($profile),
         );
 
         $generation = AiGeneration::create([
             'workspace_id' => $workspace->id,
-            'user_id' => $user->id,
-            'media_id' => $mediaId,
-            'prompt' => $userPrompt !== '' ? $userPrompt : null,
-            'caption' => $generated->caption,
-            'story_text' => $generated->storyText,
-            'hashtags' => $generated->hashtags,
+            'user_id'      => $user->id,
+            'media_id'     => $mediaId,
+            'prompt'       => $userPrompt !== '' ? $userPrompt : null,
+            'caption'      => $generated->caption,
+            'story_text'   => $generated->storyText,
+            'hashtags'     => $generated->hashtags,
             'call_to_action' => $generated->callToAction,
-            'model' => $generated->model,
-            'tokens_used' => $generated->tokensUsed,
+            'model'        => $generated->model,
+            'tokens_used'  => $generated->tokensUsed,
             'raw_response' => $generated->raw,
+            'platform'     => $platform,
+            'content_type' => $contentType,
+            'seo_focus'    => $seoFocus,
         ]);
 
         if ($generated->tokensUsed > 0) {
@@ -116,47 +122,82 @@ class AiContentGenerationService
         return $this->mediaService->url($media);
     }
 
-    private function systemPrompt(BusinessProfile $profile): string
+    private function systemPrompt(BusinessProfile $profile, string $platform = 'instagram', string $contentType = 'post'): string
     {
-        $template = $this->prompts->activeTemplate('instagram_post_generator');
+        $templateKey = "{$platform}_{$contentType}_generator";
+        $template = $this->prompts->activeTemplate($templateKey)
+            ?? $this->prompts->activeTemplate('instagram_post_generator');
 
         if ($template !== null) {
             return $template->template;
         }
 
-        return <<<'PROMPT'
-        You are an expert German social media copywriter for local businesses.
-        Write engaging, authentic Instagram content in German (Deutsch).
-        Always respect the brand's tone of voice and stay on-brand.
-        If an image is provided, describe and reference what is actually visible in it.
+        $platformInstructions = match ($platform) {
+            'tiktok'   => 'Write in TikTok style: hook in first line, short punchy sentences, trending tone. Use 3-5 hashtags max.',
+            'facebook' => 'Write for Facebook: slightly longer, conversational, encourage comments and shares. Up to 15 hashtags.',
+            'linkedin' => 'Write for LinkedIn: professional B2B tone, focus on value and expertise. Max 5 hashtags.',
+            default    => 'Write for Instagram: engaging, authentic, local. 8-15 hashtags.',
+        };
 
-        Respond ONLY with a valid JSON object using exactly these keys:
+        $contentInstructions = match ($contentType) {
+            'reel'  => 'This is for a short video Reel (15-30 seconds). story_text should be a punchy video hook/opening line.',
+            'story' => 'This is for a Story. story_text should be a short overlay text for a vertical image.',
+            'video' => 'This is for a video post. caption should describe what viewers will see.',
+            default => 'This is for a standard feed post.',
+        };
+
+        return <<<PROMPT
+        You are an expert German social media copywriter for local businesses.
+        {$platformInstructions}
+        {$contentInstructions}
+        Always write in German (Deutsch) unless instructed otherwise.
+        Respect the brand's tone of voice. Be authentic, not corporate.
+
+        Respond ONLY with a valid JSON object:
         {
-          "caption": "Instagram feed caption (2-4 sentences, with fitting emojis)",
-          "story_text": "Short punchy text overlay for an Instagram Story",
-          "hashtags": ["array", "of", "8-15", "relevant", "hashtags", "without spaces"],
-          "call_to_action": "One clear call to action"
+          "caption": "Main post caption with emojis (2-4 sentences)",
+          "story_text": "Short punchy overlay text for Story/Reel",
+          "hashtags": ["array", "of", "relevant", "hashtags", "without spaces"],
+          "call_to_action": "One clear CTA"
         }
         Do not include any text outside the JSON object.
         PROMPT;
     }
 
-    private function userPrompt(BusinessProfile $profile, string $userPrompt): string
+    private function userPrompt(BusinessProfile $profile, string $userPrompt, ?string $seoFocus = null): string
     {
         $lines = [
-            'Business name: '.$profile->business_name,
-            'Business type: '.($profile->business_type ?: 'n/a'),
-            'City: '.($profile->city ?: 'n/a'),
-            'Tone of voice: '.($profile->tone_of_voice ?: 'freundlich und einladend'),
-            'Description: '.($profile->description ?: 'n/a'),
-            'Products / services: '.($profile->products_services ?: 'n/a'),
+            'Business name: '    . $profile->business_name,
+            'Business type: '    . ($profile->business_type ?: 'n/a'),
+            'City: '             . ($profile->city ?: 'n/a'),
+            'Tone of voice: '    . ($profile->tone_of_voice ?: 'freundlich und einladend'),
+            'Description: '      . ($profile->description ?: 'n/a'),
+            'Products / services: ' . ($profile->products_services ?: 'n/a'),
         ];
 
-        if ($userPrompt !== '') {
-            $lines[] = 'Specific request for this post: '.$userPrompt;
+        if ($profile->target_audience) {
+            $lines[] = 'Target audience: ' . $profile->target_audience;
+        }
+        if ($profile->unique_value_proposition) {
+            $lines[] = 'Unique value: ' . $profile->unique_value_proposition;
+        }
+        if ($profile->primary_goal) {
+            $lines[] = 'Primary goal: ' . $profile->primary_goal;
         }
 
-        $lines[] = 'Generate one Instagram post (caption, story text, hashtags, call to action) in German.';
+        if ($seoFocus) {
+            $lines[] = "SEO focus keywords to naturally include in caption: {$seoFocus}";
+            $lines[] = "Also add location-based hashtags related to: {$seoFocus}";
+        } elseif ($profile->city && $profile->business_type) {
+            $lines[] = "Naturally mention the city ({$profile->city}) in caption to help local SEO.";
+            $lines[] = 'Include at least 2 location hashtags like #' . $profile->city . ' or #' . $profile->city . ucfirst(strtolower($profile->business_type ?? '')) . '.';
+        }
+
+        if ($userPrompt !== '') {
+            $lines[] = 'Specific request for this post: ' . $userPrompt;
+        }
+
+        $lines[] = 'Generate one social media post in German.';
 
         return implode("\n", $lines);
     }

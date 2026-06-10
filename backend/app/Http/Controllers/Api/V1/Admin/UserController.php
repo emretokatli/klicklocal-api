@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use App\Services\Admin\AdminUserService;
+use App\Support\PlatformRole;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -38,8 +40,8 @@ class UserController extends Controller
         $this->authorize('updateRoles', User::class);
 
         $validated = $request->validate([
-            'roles' => ['required', 'array'],
-            'roles.*' => ['string', 'in:super_admin,admin,support'],
+            'roles' => ['present', 'array'],
+            'roles.*' => ['string', Rule::in(PlatformRole::all())],
         ]);
 
         $updated = $this->users->syncPlatformRoles($user, $validated['roles']);

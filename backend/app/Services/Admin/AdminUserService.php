@@ -42,12 +42,15 @@ class AdminUserService
     {
         $this->authorization->clearWorkspaceTeam();
 
-        $valid = array_values(array_intersect($roles, PlatformRole::all()));
-        $roleModels = Role::query()
-            ->whereIn('name', $valid)
-            ->where('guard_name', Permission::GUARD)
-            ->where('workspace_id', TeamContext::PLATFORM)
-            ->get();
+        $valid = $this->filterPlatformRoles($roles);
+        $roleModels = $valid === []
+            ? collect()
+            : Role::query()
+                ->whereIn('name', $valid)
+                ->where('guard_name', Permission::GUARD)
+                ->where('workspace_id', TeamContext::PLATFORM)
+                ->get();
+
         $user->syncRoles($roleModels);
 
         return $this->find($user->id);
@@ -58,7 +61,16 @@ class AdminUserService
         $this->authorization->clearWorkspaceTeam();
         $user->setAttribute(
             'platform_roles',
-            $user->getRoleNames()->values()->all(),
+            $this->filterPlatformRoles($user->getRoleNames()->values()->all()),
         );
+    }
+
+    /**
+     * @param  list<string>  $roles
+     * @return list<string>
+     */
+    private function filterPlatformRoles(array $roles): array
+    {
+        return array_values(array_intersect($roles, PlatformRole::all()));
     }
 }

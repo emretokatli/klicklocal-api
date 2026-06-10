@@ -22,4 +22,13 @@ class BillingController extends Controller
             $this->billing->overview($workspace),
         );
     }
+
+    public function transactions(Request $request): JsonResponse
+    {
+        $workspace = $request->attributes->get('workspace');
+
+        return ApiResponse::success([
+            'transactions' => $this->billing->transactions($workspace),
+        ]);
+    }
 }

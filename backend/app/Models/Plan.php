@@ -14,6 +14,7 @@ class Plan extends Model
         'monthly_price',
         'yearly_price',
         'trial_days',
+        'store_product_ids',
         'is_active',
         'sort_order',
     ];
@@ -23,6 +24,7 @@ class Plan extends Model
         return [
             'monthly_price' => 'decimal:2',
             'yearly_price' => 'decimal:2',
+            'store_product_ids' => 'array',
             'is_active' => 'boolean',
         ];
     }

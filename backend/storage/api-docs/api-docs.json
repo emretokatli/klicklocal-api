@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
         "title": "Klicklocal Scheduler API",
-        "description": "Social media scheduling SaaS API. Authenticate with Bearer token (Laravel Sanctum).",
+        "description": "Social media scheduling SaaS API. Authenticate with Bearer token (Laravel Sanctum). Workspace-scoped routes accept `X-Workspace-Id` header or `workspace_id` query/body.",
         "version": "1.0.0"
     },
     "paths": {
@@ -49,6 +49,48 @@
                 "responses": {
                     "201": {
                         "description": "Registered"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/auth/register-email": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Start or resume email-only onboarding registration",
+                "operationId": "authRegisterEmail",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Registration started or onboarding resumed"
                     },
                     "422": {
                         "description": "Validation error"
@@ -142,8 +184,18 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Get authenticated user",
+                "summary": "Get authenticated user and workspace context",
                 "operationId": "authMe",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Current user"
@@ -157,6 +209,246 @@
                         "sanctum": []
                     }
                 ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/auth/onboarding": {
+            "get": {
+                "tags": [
+                    "Onboarding"
+                ],
+                "summary": "Get user onboarding status",
+                "operationId": "authOnboardingStatus",
+                "responses": {
+                    "200": {
+                        "description": "Onboarding status"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Onboarding"
+                ],
+                "summary": "Save user onboarding progress",
+                "operationId": "authUpdateOnboarding",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "step"
+                                ],
+                                "properties": {
+                                    "step": {
+                                        "type": "string",
+                                        "maxLength": 60
+                                    },
+                                    "data": {
+                                        "type": "object",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Progress saved"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/auth/onboarding/complete": {
+            "post": {
+                "tags": [
+                    "Onboarding"
+                ],
+                "summary": "Complete onboarding and create workspace",
+                "operationId": "authCompleteOnboarding",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "password",
+                                    "password_confirmation",
+                                    "first_name",
+                                    "business_name",
+                                    "industry"
+                                ],
+                                "properties": {
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password"
+                                    },
+                                    "first_name": {
+                                        "type": "string"
+                                    },
+                                    "business_name": {
+                                        "type": "string"
+                                    },
+                                    "website": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "industry": {
+                                        "type": "string"
+                                    },
+                                    "team_size": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "monthly_revenue": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "customer_source": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "social_media_channels": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "nullable": true
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "target_audience": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "unique_value_proposition": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "additional_notes": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "primary_goal": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Onboarding completed"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/onboarding/analyze-website": {
+            "post": {
+                "tags": [
+                    "Onboarding"
+                ],
+                "summary": "Analyze a business website for onboarding (public, rate-limited)",
+                "operationId": "onboardingAnalyzeWebsite",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "website"
+                                ],
+                                "properties": {
+                                    "website": {
+                                        "type": "string"
+                                    },
+                                    "business_name": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "industry": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Website analyzed"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded"
+                    }
+                },
                 "servers": [
                     {
                         "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
@@ -378,6 +670,437 @@
                 ]
             }
         },
+        "/workspaces/{workspace}/onboarding": {
+            "patch": {
+                "tags": [
+                    "Onboarding"
+                ],
+                "summary": "Update workspace onboarding step",
+                "operationId": "workspaceOnboardingUpdate",
+                "parameters": [
+                    {
+                        "name": "workspace",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "step": {
+                                        "type": "integer",
+                                        "nullable": true,
+                                        "maximum": 4,
+                                        "minimum": 1
+                                    },
+                                    "completed": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Onboarding updated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/workspaces/{workspace}/business-profile": {
+            "get": {
+                "tags": [
+                    "Business Profile"
+                ],
+                "summary": "Get workspace business profile",
+                "operationId": "businessProfileShow",
+                "parameters": [
+                    {
+                        "name": "workspace",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Business profile"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Business Profile"
+                ],
+                "summary": "Create or update workspace business profile",
+                "operationId": "businessProfileUpdate",
+                "parameters": [
+                    {
+                        "name": "workspace",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "business_name",
+                                    "business_type"
+                                ],
+                                "properties": {
+                                    "business_name": {
+                                        "type": "string"
+                                    },
+                                    "business_type": {
+                                        "type": "string"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "tone_of_voice": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "products_services": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "website": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "team_size": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "monthly_revenue": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "customer_source": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "social_media_channels": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "nullable": true
+                                    },
+                                    "target_audience": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "unique_value_proposition": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "additional_notes": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "primary_goal": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Business profile saved"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/ai/generate": {
+            "post": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "Generate AI social content",
+                "operationId": "aiGenerate",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "workspace_id"
+                                ],
+                                "properties": {
+                                    "workspace_id": {
+                                        "type": "integer"
+                                    },
+                                    "media_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "prompt": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 1000
+                                    },
+                                    "platform": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "instagram",
+                                            "facebook",
+                                            "tiktok",
+                                            "linkedin"
+                                        ]
+                                    },
+                                    "content_type": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "post",
+                                            "reel",
+                                            "story",
+                                            "video"
+                                        ]
+                                    },
+                                    "language": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "de",
+                                            "en"
+                                        ]
+                                    },
+                                    "seo_focus": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 100
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Content generated"
+                    },
+                    "402": {
+                        "description": "Quota exceeded or subscription required"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/ai/generate-image": {
+            "post": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "Generate AI image for social content",
+                "operationId": "aiGenerateImage",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "workspace_id"
+                                ],
+                                "properties": {
+                                    "workspace_id": {
+                                        "type": "integer"
+                                    },
+                                    "prompt": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 500
+                                    },
+                                    "platform": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "instagram",
+                                            "facebook",
+                                            "tiktok",
+                                            "linkedin"
+                                        ]
+                                    },
+                                    "content_type": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "post",
+                                            "reel",
+                                            "story",
+                                            "video"
+                                        ]
+                                    },
+                                    "generation_id": {
+                                        "description": "Link image to an existing AI generation",
+                                        "type": "integer",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Image generated"
+                    },
+                    "402": {
+                        "description": "Quota exceeded or subscription required"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/ai/generations": {
+            "get": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "List AI generation history for a workspace",
+                "operationId": "aiGenerationsIndex",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generation history"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
         "/posts": {
             "get": {
                 "tags": [
@@ -386,6 +1109,9 @@
                 "summary": "List posts in a workspace",
                 "operationId": "postsIndex",
                 "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
                     {
                         "name": "workspace_id",
                         "in": "query",
@@ -418,6 +1144,11 @@
                 ],
                 "summary": "Create draft post",
                 "operationId": "postsStore",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -437,6 +1168,10 @@
                                     "content": {
                                         "type": "string",
                                         "nullable": true
+                                    },
+                                    "media_id": {
+                                        "type": "integer",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -447,6 +1182,75 @@
                 "responses": {
                     "201": {
                         "description": "Created"
+                    },
+                    "402": {
+                        "description": "Subscription required"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/posts/quick-publish": {
+            "post": {
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Create and immediately publish a post to a connected social account",
+                "operationId": "postsQuickPublish",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "platform",
+                                    "content"
+                                ],
+                                "properties": {
+                                    "platform": {
+                                        "type": "string",
+                                        "enum": [
+                                            "instagram",
+                                            "tiktok"
+                                        ]
+                                    },
+                                    "content": {
+                                        "type": "string"
+                                    },
+                                    "media_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Queued for publishing"
+                    },
+                    "402": {
+                        "description": "Quota exceeded"
+                    },
+                    "422": {
+                        "description": "No connected account or validation error"
                     }
                 },
                 "security": [
@@ -523,6 +1327,10 @@
                                     },
                                     "content": {
                                         "type": "string",
+                                        "nullable": true
+                                    },
+                                    "media_id": {
+                                        "type": "integer",
                                         "nullable": true
                                     }
                                 },
@@ -627,6 +1435,99 @@
                 "responses": {
                     "200": {
                         "description": "Scheduled"
+                    },
+                    "402": {
+                        "description": "Quota exceeded"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/posts/{post}/publish": {
+            "post": {
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Publish post immediately",
+                "operationId": "postsPublish",
+                "parameters": [
+                    {
+                        "name": "post",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "social_account_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Queued for publishing"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/media": {
+            "get": {
+                "tags": [
+                    "Media"
+                ],
+                "summary": "List media in a workspace",
+                "operationId": "mediaIndex",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Media list"
                     }
                 },
                 "security": [
@@ -649,6 +1550,11 @@
                 ],
                 "summary": "Upload image or video",
                 "operationId": "mediaUpload",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -675,6 +1581,2143 @@
                 "responses": {
                     "201": {
                         "description": "Uploaded"
+                    },
+                    "402": {
+                        "description": "Quota exceeded"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/billing": {
+            "get": {
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Billing overview for active workspace",
+                "operationId": "billingIndex",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Billing overview"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/transactions": {
+            "get": {
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "List transactions for active workspace",
+                "operationId": "billingTransactions",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Transaction list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/subscription": {
+            "get": {
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Get active subscription for workspace",
+                "operationId": "subscriptionShow",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Subscription details"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Subscribe workspace to a plan",
+                "operationId": "subscriptionSubscribe",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "plan_id"
+                                ],
+                                "properties": {
+                                    "plan_id": {
+                                        "type": "integer"
+                                    },
+                                    "billing_cycle": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "monthly",
+                                            "yearly"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Subscription started"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/subscription/cancel": {
+            "post": {
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Cancel active workspace subscription",
+                "operationId": "subscriptionCancel",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Subscription cancelled"
+                    },
+                    "404": {
+                        "description": "No active subscription"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/usage": {
+            "get": {
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Feature usage for active workspace",
+                "operationId": "usageIndex",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usage summary"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/invoices": {
+            "get": {
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "List invoices for active workspace",
+                "operationId": "invoicesIndex",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invoice list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/quota/packages": {
+            "get": {
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "List available quota top-up packages",
+                "operationId": "quotaPackages",
+                "responses": {
+                    "200": {
+                        "description": "Package list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/quota/topup": {
+            "post": {
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Purchase a quota top-up package",
+                "operationId": "quotaTopup",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "workspace_id",
+                                    "package_key"
+                                ],
+                                "properties": {
+                                    "workspace_id": {
+                                        "type": "integer"
+                                    },
+                                    "package_key": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ai_monthly_tokens",
+                                            "scheduled_posts_monthly"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Top-up purchased"
+                    },
+                    "402": {
+                        "description": "Subscription required"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/instagram/connect": {
+            "get": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "Start Instagram Business Login",
+                "operationId": "instagramConnect",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authorization URL"
+                    },
+                    "503": {
+                        "description": "Instagram connection disabled"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/instagram/callback": {
+            "get": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "Instagram OAuth callback (redirect)",
+                "operationId": "instagramCallback",
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "error",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to frontend"
+                    }
+                },
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/instagram/disconnect": {
+            "post": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "Disconnect Instagram account",
+                "operationId": "instagramDisconnect",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Disconnected"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/instagram/status": {
+            "get": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "Instagram connection status",
+                "operationId": "instagramStatus",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connection status"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/tiktok/connect": {
+            "get": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "Start TikTok Login",
+                "operationId": "tiktokConnect",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authorization URL"
+                    },
+                    "503": {
+                        "description": "TikTok connection disabled"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/tiktok/callback": {
+            "get": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "TikTok OAuth callback (redirect)",
+                "operationId": "tiktokCallback",
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "error",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to frontend"
+                    }
+                },
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/tiktok/disconnect": {
+            "post": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "Disconnect TikTok account",
+                "operationId": "tiktokDisconnect",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Disconnected"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/tiktok/status": {
+            "get": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "TikTok connection status",
+                "operationId": "tiktokStatus",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connection status"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/users": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List platform users",
+                "operationId": "adminUsersIndex",
+                "responses": {
+                    "200": {
+                        "description": "User list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/users/{user}": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get platform user",
+                "operationId": "adminUsersShow",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User details"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/users/{user}/roles": {
+            "put": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Update platform roles for a user",
+                "operationId": "adminUsersUpdateRoles",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "roles"
+                                ],
+                                "properties": {
+                                    "roles": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "super_admin",
+                                                "admin",
+                                                "support"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Roles updated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/plans/feature-keys": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List available plan feature keys",
+                "operationId": "adminPlansFeatureKeys",
+                "responses": {
+                    "200": {
+                        "description": "Feature keys"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/plans": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List subscription plans",
+                "operationId": "adminPlansIndex",
+                "responses": {
+                    "200": {
+                        "description": "Plan list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Create subscription plan",
+                "operationId": "adminPlansStore",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "slug",
+                                    "name",
+                                    "monthly_price"
+                                ],
+                                "properties": {
+                                    "slug": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "monthly_price": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "yearly_price": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "trial_days": {
+                                        "type": "integer"
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    },
+                                    "sort_order": {
+                                        "type": "integer"
+                                    },
+                                    "features": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Plan created"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/plans/{plan}": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get subscription plan",
+                "operationId": "adminPlansShow",
+                "parameters": [
+                    {
+                        "name": "plan",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Plan details"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Update subscription plan",
+                "operationId": "adminPlansUpdate",
+                "parameters": [
+                    {
+                        "name": "plan",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "slug": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "monthly_price": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "yearly_price": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "trial_days": {
+                                        "type": "integer"
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    },
+                                    "sort_order": {
+                                        "type": "integer"
+                                    },
+                                    "features": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Plan updated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Delete subscription plan",
+                "operationId": "adminPlansDestroy",
+                "parameters": [
+                    {
+                        "name": "plan",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Plan deleted"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/workspaces": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List all workspaces",
+                "operationId": "adminWorkspacesIndex",
+                "responses": {
+                    "200": {
+                        "description": "Workspace list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/subscriptions": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List all subscriptions",
+                "operationId": "adminSubscriptionsIndex",
+                "responses": {
+                    "200": {
+                        "description": "Subscription list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Assign subscription to workspace",
+                "operationId": "adminSubscriptionsStore",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "workspace_id",
+                                    "plan_id"
+                                ],
+                                "properties": {
+                                    "workspace_id": {
+                                        "type": "integer"
+                                    },
+                                    "plan_id": {
+                                        "type": "integer"
+                                    },
+                                    "billing_cycle": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "monthly",
+                                            "yearly"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Subscription assigned"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/subscriptions/demo": {
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Grant demo subscription period to workspace",
+                "operationId": "adminSubscriptionsGrantDemo",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "workspace_id",
+                                    "days"
+                                ],
+                                "properties": {
+                                    "workspace_id": {
+                                        "type": "integer"
+                                    },
+                                    "days": {
+                                        "type": "integer",
+                                        "maximum": 365,
+                                        "minimum": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Demo period granted"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/subscriptions/{subscription}": {
+            "delete": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Cancel a subscription",
+                "operationId": "adminSubscriptionsDestroy",
+                "parameters": [
+                    {
+                        "name": "subscription",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Subscription cancelled"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/transactions": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List all platform transactions",
+                "operationId": "adminTransactionsIndex",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Transaction list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/coupons": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List coupons",
+                "operationId": "adminCouponsIndex",
+                "responses": {
+                    "200": {
+                        "description": "Coupon list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Create coupon",
+                "operationId": "adminCouponsStore",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code",
+                                    "name",
+                                    "type",
+                                    "value"
+                                ],
+                                "properties": {
+                                    "code": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "percent",
+                                            "fixed"
+                                        ]
+                                    },
+                                    "value": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "max_redemptions": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "valid_from": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "nullable": true
+                                    },
+                                    "valid_until": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "nullable": true
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Coupon created"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/coupons/{coupon}": {
+            "put": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Update coupon",
+                "operationId": "adminCouponsUpdate",
+                "parameters": [
+                    {
+                        "name": "coupon",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "percent",
+                                            "fixed"
+                                        ]
+                                    },
+                                    "value": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "max_redemptions": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "valid_from": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "nullable": true
+                                    },
+                                    "valid_until": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "nullable": true
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Coupon updated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/settings": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get platform settings",
+                "operationId": "adminSettingsIndex",
+                "responses": {
+                    "200": {
+                        "description": "Platform settings"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Update platform settings",
+                "operationId": "adminSettingsUpdate",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "app_name": {
+                                        "type": "string"
+                                    },
+                                    "support_email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "default_timezone": {
+                                        "type": "string"
+                                    },
+                                    "maintenance_mode": {
+                                        "type": "boolean"
+                                    },
+                                    "trial_days": {
+                                        "type": "integer",
+                                        "maximum": 90,
+                                        "minimum": 0
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Settings updated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/ai-prompts": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List AI prompt templates",
+                "operationId": "adminAiPromptsIndex",
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "caption",
+                                "content",
+                                "hashtag",
+                                "reply",
+                                "scheduling",
+                                "brand_voice"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "active_only",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Prompt list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Create AI prompt template",
+                "operationId": "adminAiPromptsStore",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "key",
+                                    "name",
+                                    "category",
+                                    "template"
+                                ],
+                                "properties": {
+                                    "key": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "enum": [
+                                            "caption",
+                                            "content",
+                                            "hashtag",
+                                            "reply",
+                                            "scheduling",
+                                            "brand_voice"
+                                        ]
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "template": {
+                                        "type": "string"
+                                    },
+                                    "variables": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "nullable": true
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Prompt created"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/ai-prompts/{aiPromptTemplate}": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get AI prompt template",
+                "operationId": "adminAiPromptsShow",
+                "parameters": [
+                    {
+                        "name": "aiPromptTemplate",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Prompt details"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Update AI prompt template",
+                "operationId": "adminAiPromptsUpdate",
+                "parameters": [
+                    {
+                        "name": "aiPromptTemplate",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "enum": [
+                                            "caption",
+                                            "content",
+                                            "hashtag",
+                                            "reply",
+                                            "scheduling",
+                                            "brand_voice"
+                                        ]
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "template": {
+                                        "type": "string"
+                                    },
+                                    "variables": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "nullable": true
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Prompt updated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/ai-prompts/{aiPromptTemplate}/active": {
+            "patch": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Activate or deactivate AI prompt template",
+                "operationId": "adminAiPromptsSetActive",
+                "parameters": [
+                    {
+                        "name": "aiPromptTemplate",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "is_active"
+                                ],
+                                "properties": {
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Prompt status updated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/usage": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Platform usage analytics",
+                "operationId": "adminUsageIndex",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 500,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usage analytics"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/quota-addons": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List quota add-ons",
+                "operationId": "adminQuotaAddonsIndex",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Quota add-on list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Manually assign quota add-on to workspace",
+                "operationId": "adminQuotaAddonsStore",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "workspace_id",
+                                    "feature_key",
+                                    "amount",
+                                    "price_paid"
+                                ],
+                                "properties": {
+                                    "workspace_id": {
+                                        "type": "integer"
+                                    },
+                                    "feature_key": {
+                                        "type": "string",
+                                        "enum": [
+                                            "max_workspaces",
+                                            "max_social_accounts",
+                                            "max_team_members",
+                                            "ai_generation",
+                                            "ai_monthly_tokens",
+                                            "analytics_enabled",
+                                            "video_generation",
+                                            "storage_limit_mb",
+                                            "scheduled_posts_monthly",
+                                            "media_uploads_monthly",
+                                            "api_calls_monthly"
+                                        ]
+                                    },
+                                    "amount": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                    },
+                                    "expires_at": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "nullable": true
+                                    },
+                                    "price_paid": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "minimum": 0
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Quota add-on assigned"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/providers": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List social provider settings",
+                "operationId": "adminProvidersIndex",
+                "responses": {
+                    "200": {
+                        "description": "Provider list"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/providers/{provider}": {
+            "put": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Update social provider settings",
+                "operationId": "adminProvidersUpdate",
+                "parameters": [
+                    {
+                        "name": "provider",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean"
+                                    },
+                                    "app_id": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "callback_url": {
+                                        "type": "string",
+                                        "format": "uri",
+                                        "nullable": true
+                                    },
+                                    "api_version": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "scopes": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Provider updated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/providers/instagram": {
+            "put": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Update Instagram provider settings",
+                "operationId": "adminProvidersUpdateInstagram",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean"
+                                    },
+                                    "app_id": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "callback_url": {
+                                        "type": "string",
+                                        "format": "uri",
+                                        "nullable": true
+                                    },
+                                    "api_version": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "scopes": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Instagram provider updated"
                     }
                 },
                 "security": [
@@ -748,6 +3791,14 @@
                     "avatar": {
                         "type": "string",
                         "nullable": true
+                    },
+                    "onboarding_step": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "onboarding_data": {
+                        "type": "object",
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -773,6 +3824,14 @@
                     "timezone": {
                         "type": "string",
                         "example": "UTC"
+                    },
+                    "onboarding_step": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "onboarding_completed": {
+                        "type": "boolean",
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -794,6 +3853,10 @@
                     },
                     "content": {
                         "type": "string",
+                        "nullable": true
+                    },
+                    "media_id": {
+                        "type": "integer",
                         "nullable": true
                     },
                     "status": {
@@ -818,6 +3881,199 @@
                     }
                 },
                 "type": "object"
+            },
+            "AiGeneration": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "workspace_id": {
+                        "type": "integer"
+                    },
+                    "user_id": {
+                        "type": "integer"
+                    },
+                    "media_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "prompt": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "platform": {
+                        "type": "string",
+                        "enum": [
+                            "instagram",
+                            "facebook",
+                            "tiktok",
+                            "linkedin"
+                        ]
+                    },
+                    "content_type": {
+                        "type": "string",
+                        "enum": [
+                            "post",
+                            "reel",
+                            "story",
+                            "video"
+                        ]
+                    },
+                    "seo_focus": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "caption": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "story_text": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "hashtags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "nullable": true
+                    },
+                    "call_to_action": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "model": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "tokens_used": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "generated_image_url": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "image_model": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "image_revised_prompt": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "BusinessProfile": {
+                "properties": {
+                    "business_name": {
+                        "type": "string"
+                    },
+                    "business_type": {
+                        "type": "string"
+                    },
+                    "city": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "tone_of_voice": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "products_services": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "website": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "team_size": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "monthly_revenue": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "customer_source": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "social_media_channels": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "nullable": true
+                    },
+                    "target_audience": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "unique_value_proposition": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "additional_notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "primary_goal": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "QuotaAddon": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "workspace_id": {
+                        "type": "integer"
+                    },
+                    "feature_key": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "integer"
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "purchased_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "price_paid": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "provider": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "parameters": {
+            "WorkspaceIdHeader": {
+                "name": "X-Workspace-Id",
+                "in": "header",
+                "description": "Active workspace ID (alternative to workspace_id query/body).",
+                "required": false,
+                "schema": {
+                    "type": "integer"
+                }
             }
         },
         "securitySchemes": {
@@ -835,16 +4091,40 @@
             "description": "Registration, login, and session"
         },
         {
+            "name": "Onboarding",
+            "description": "User and workspace onboarding"
+        },
+        {
             "name": "Workspaces",
             "description": "Workspace CRUD"
         },
         {
+            "name": "Business Profile",
+            "description": "Workspace business profile"
+        },
+        {
             "name": "Posts",
-            "description": "Post CRUD and scheduling"
+            "description": "Post CRUD, scheduling, and publishing"
         },
         {
             "name": "Media",
-            "description": "Media uploads"
+            "description": "Media uploads and listing"
+        },
+        {
+            "name": "AI",
+            "description": "AI content and image generation"
+        },
+        {
+            "name": "Billing",
+            "description": "Subscriptions, usage, invoices, and quota top-ups"
+        },
+        {
+            "name": "Social Accounts",
+            "description": "Instagram and TikTok OAuth"
+        },
+        {
+            "name": "Admin",
+            "description": "Platform administration (requires platform admin role)"
         }
     ]
 }

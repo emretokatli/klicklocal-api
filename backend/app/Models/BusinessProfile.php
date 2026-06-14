@@ -24,10 +24,15 @@ class BusinessProfile extends Model
         'unique_value_proposition',
         'additional_notes',
         'primary_goal',
+        'website_analysis',
+        'website_analysis_url',
+        'website_analyzed_at',
     ];
 
     protected $casts = [
         'social_media_channels' => 'array',
+        'website_analysis' => 'array',
+        'website_analyzed_at' => 'datetime',
     ];
 
     public function workspace(): BelongsTo

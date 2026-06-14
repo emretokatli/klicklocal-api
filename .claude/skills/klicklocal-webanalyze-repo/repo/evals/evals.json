@@ -1,0 +1,23 @@
+{
+  "skill_name": "klicklocal-webanalyze",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Got a new lead: a physio practice, their site is https://www.physio-beispiel-augsburg.de. Check what CMS they're on, whether they have any tracking installed, and pull their contact details from the Impressum for our CRM. Give me a few talking points for the first call.",
+      "expected_output": "A complete lead report following the template: snapshot table (CMS, tracking, consent, mobile, HTTPS), NAP contact data, SEO quick check, conversion elements, and 3-5 business-language talking points.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "My client is a dentist in Munich (zahnarzt-client.de). Compare his site against these two competitors: zahnarzt-konkurrent1.de and zahnarzt-konkurrent2.de. Tech stack, SEO basics, schema markup, conversion elements - who's strongest and what should my client fix first?",
+      "expected_output": "One side-by-side comparison table (rows = criteria, columns = sites), a short strengths/weaknesses verdict per site framed relative to the client, and a top-3 action list for the client.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "quick seo check of https://www.example-handwerker.de - meta tags, headings, schema.org, anything that looks off",
+      "expected_output": "A focused SEO snapshot: title/description with lengths, h1 structure, schema.org types found/missing, mobile viewport, HTTPS, alt-text coverage, and a clear list of red flags. No full lead report needed.",
+      "files": []
+    }
+  ]
+}

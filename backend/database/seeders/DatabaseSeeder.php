@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
             AiPromptSeeder::class,
             AdminUserSeeder::class,
+            TrendSeeder::class,
         ]);
     }
 }

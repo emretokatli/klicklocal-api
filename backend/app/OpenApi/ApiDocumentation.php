@@ -86,6 +86,35 @@ use OpenApi\Attributes as OA;
     ],
 )]
 #[OA\Schema(
+    schema: 'Comment',
+    properties: [
+        new OA\Property(property: 'id', type: 'integer'),
+        new OA\Property(property: 'workspace_id', type: 'integer'),
+        new OA\Property(property: 'post_id', type: 'integer', nullable: true),
+        new OA\Property(property: 'platform', type: 'string', enum: ['instagram', 'tiktok', 'facebook', 'linkedin']),
+        new OA\Property(property: 'external_id', type: 'string', nullable: true, description: 'Provider comment id (null for manually created comments)'),
+        new OA\Property(property: 'author', type: 'string'),
+        new OA\Property(property: 'text', type: 'string'),
+        new OA\Property(
+            property: 'sentiment',
+            type: 'string',
+            enum: ['positive', 'neutral', 'negative'],
+            description: 'Assigned asynchronously by the AI sentiment classifier after ingestion (defaults to neutral until classified).',
+        ),
+        new OA\Property(
+            property: 'sentiment_classified_at',
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+            description: 'When the sentiment was classified (AI or explicit manual value). Null = not yet classified; such rows are swept hourly.',
+        ),
+        new OA\Property(property: 'commented_at', type: 'string', format: 'date-time', nullable: true),
+        new OA\Property(property: 'suggested_reply', type: 'string', nullable: true, description: 'Last AI-generated reply suggestion (overwritten on regenerate).'),
+        new OA\Property(property: 'reply_text', type: 'string', nullable: true, description: 'The reply that was sent. Null until the comment is answered.'),
+        new OA\Property(property: 'replied_at', type: 'string', format: 'date-time', nullable: true),
+    ],
+)]
+#[OA\Schema(
     schema: 'AiGeneration',
     properties: [
         new OA\Property(property: 'id', type: 'integer'),
@@ -145,6 +174,7 @@ use OpenApi\Attributes as OA;
 #[OA\Tag(name: 'Workspaces', description: 'Workspace CRUD')]
 #[OA\Tag(name: 'Business Profile', description: 'Workspace business profile')]
 #[OA\Tag(name: 'Posts', description: 'Post CRUD, scheduling, and publishing')]
+#[OA\Tag(name: 'Comments', description: 'Synced social media comments with AI sentiment classification')]
 #[OA\Tag(name: 'Media', description: 'Media uploads and listing')]
 #[OA\Tag(name: 'AI', description: 'AI content and image generation')]
 #[OA\Tag(name: 'Billing', description: 'Subscriptions, usage, invoices, and quota top-ups')]
@@ -709,6 +739,183 @@ use OpenApi\Attributes as OA;
     ),
     responses: [
         new OA\Response(response: 200, description: 'Queued for publishing'),
+    ],
+)]
+// --- Comments ---
+#[OA\Get(
+    path: '/comments',
+    operationId: 'commentsIndex',
+    tags: ['Comments'],
+    summary: 'List comments in a workspace',
+    description: 'Comments are pulled from connected social accounts by the periodic sync. Sentiment is assigned asynchronously by the AI classifier (batched, German-aware); filter with `sentiment` once `sentiment_classified_at` is set.',
+    security: [['sanctum' => []]],
+    parameters: [
+        new OA\Parameter(ref: '#/components/parameters/WorkspaceIdHeader'),
+        new OA\Parameter(name: 'workspace_id', in: 'query', required: true, schema: new OA\Schema(type: 'integer')),
+        new OA\Parameter(name: 'platform', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['instagram', 'tiktok', 'facebook', 'linkedin'])),
+        new OA\Parameter(name: 'sentiment', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['positive', 'neutral', 'negative'])),
+        new OA\Parameter(name: 'limit', in: 'query', required: false, schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 100, default: 50)),
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Comment list',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'success', type: 'boolean', example: true),
+                    new OA\Property(
+                        property: 'data',
+                        properties: [
+                            new OA\Property(property: 'comments', type: 'array', items: new OA\Items(ref: '#/components/schemas/Comment')),
+                        ],
+                        type: 'object',
+                    ),
+                ],
+            ),
+        ),
+        new OA\Response(response: 422, description: 'Validation error'),
+    ],
+)]
+#[OA\Post(
+    path: '/comments',
+    operationId: 'commentsStore',
+    tags: ['Comments'],
+    summary: 'Create a comment manually',
+    description: 'If `sentiment` is provided it is stored as-is and marked classified (the AI sweep will not overwrite it). If omitted, sentiment defaults to neutral and the hourly AI classifier sweep assigns it.',
+    security: [['sanctum' => []]],
+    parameters: [new OA\Parameter(ref: '#/components/parameters/WorkspaceIdHeader')],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['workspace_id', 'platform', 'author', 'text'],
+            properties: [
+                new OA\Property(property: 'workspace_id', type: 'integer'),
+                new OA\Property(property: 'platform', type: 'string', enum: ['instagram', 'tiktok', 'facebook', 'linkedin']),
+                new OA\Property(property: 'author', type: 'string', maxLength: 255),
+                new OA\Property(property: 'text', type: 'string', maxLength: 2000),
+                new OA\Property(property: 'sentiment', type: 'string', enum: ['positive', 'neutral', 'negative'], nullable: true),
+                new OA\Property(property: 'commented_at', type: 'string', format: 'date-time', nullable: true),
+            ],
+        ),
+    ),
+    responses: [
+        new OA\Response(response: 201, description: 'Comment created'),
+        new OA\Response(response: 422, description: 'Validation error'),
+    ],
+)]
+#[OA\Get(
+    path: '/comments/stats',
+    operationId: 'commentsStats',
+    tags: ['Comments'],
+    summary: 'Sentiment counts for the workspace comments',
+    description: 'Counts comments per sentiment class, optionally restricted to one platform. Unclassified comments count as neutral (their stored default).',
+    security: [['sanctum' => []]],
+    parameters: [
+        new OA\Parameter(ref: '#/components/parameters/WorkspaceIdHeader'),
+        new OA\Parameter(name: 'workspace_id', in: 'query', required: true, schema: new OA\Schema(type: 'integer')),
+        new OA\Parameter(name: 'platform', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['instagram', 'tiktok', 'facebook', 'linkedin'])),
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Sentiment counts',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'success', type: 'boolean', example: true),
+                    new OA\Property(
+                        property: 'data',
+                        properties: [
+                            new OA\Property(
+                                property: 'stats',
+                                properties: [
+                                    new OA\Property(property: 'total', type: 'integer', example: 12),
+                                    new OA\Property(property: 'positive', type: 'integer', example: 7),
+                                    new OA\Property(property: 'neutral', type: 'integer', example: 3),
+                                    new OA\Property(property: 'negative', type: 'integer', example: 2),
+                                ],
+                                type: 'object',
+                            ),
+                        ],
+                        type: 'object',
+                    ),
+                ],
+            ),
+        ),
+        new OA\Response(response: 422, description: 'Validation error'),
+    ],
+)]
+#[OA\Post(
+    path: '/comments/{comment}/suggest-reply',
+    operationId: 'commentsSuggestReply',
+    tags: ['Comments'],
+    summary: 'Generate an AI reply suggestion for a comment',
+    description: 'Stores the suggestion on `suggested_reply` (regenerating overwrites it). Gated like /ai/generate: requires an active subscription (402 otherwise) and the `ai_generation` plan feature (403 otherwise).',
+    security: [['sanctum' => []]],
+    parameters: [
+        new OA\Parameter(ref: '#/components/parameters/WorkspaceIdHeader'),
+        new OA\Parameter(name: 'comment', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Suggestion generated',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'success', type: 'boolean', example: true),
+                    new OA\Property(
+                        property: 'data',
+                        properties: [
+                            new OA\Property(property: 'comment', ref: '#/components/schemas/Comment'),
+                        ],
+                        type: 'object',
+                    ),
+                ],
+            ),
+        ),
+        new OA\Response(response: 402, description: 'No active subscription'),
+        new OA\Response(response: 403, description: 'Plan lacks the ai_generation feature'),
+        new OA\Response(response: 404, description: 'Comment not in this workspace'),
+    ],
+)]
+#[OA\Post(
+    path: '/comments/{comment}/reply',
+    operationId: 'commentsReply',
+    tags: ['Comments'],
+    summary: 'Reply to a comment',
+    description: 'Stores `reply_text` and `replied_at`. Only synced comments (with a provider `external_id`) can be answered; manually created comments are rejected with 422, as is a second reply.',
+    security: [['sanctum' => []]],
+    parameters: [
+        new OA\Parameter(ref: '#/components/parameters/WorkspaceIdHeader'),
+        new OA\Parameter(name: 'comment', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+    ],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['reply_text'],
+            properties: [
+                new OA\Property(property: 'reply_text', type: 'string', maxLength: 2000),
+            ],
+        ),
+    ),
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Reply stored',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'success', type: 'boolean', example: true),
+                    new OA\Property(
+                        property: 'data',
+                        properties: [
+                            new OA\Property(property: 'comment', ref: '#/components/schemas/Comment'),
+                        ],
+                        type: 'object',
+                    ),
+                ],
+            ),
+        ),
+        new OA\Response(response: 404, description: 'Comment not in this workspace'),
+        new OA\Response(response: 422, description: 'Manual comment, already replied, or validation error'),
     ],
 )]
 // --- Media ---
@@ -1290,6 +1497,54 @@ use OpenApi\Attributes as OA;
         ),
     ),
     responses: [new OA\Response(response: 200, description: 'Settings updated')],
+)]
+#[OA\Get(
+    path: '/admin/website-analyze',
+    operationId: 'adminWebsiteAnalyzeIndex',
+    tags: ['Admin'],
+    summary: 'List past website analysis runs for the current admin',
+    security: [['sanctum' => []]],
+    parameters: [
+        new OA\Parameter(name: 'limit', in: 'query', schema: new OA\Schema(type: 'integer', default: 30, maximum: 50)),
+    ],
+    responses: [new OA\Response(response: 200, description: 'Analysis run summaries (newest first)')],
+)]
+#[OA\Post(
+    path: '/admin/website-analyze',
+    operationId: 'adminWebsiteAnalyze',
+    tags: ['Admin'],
+    summary: 'Queue a business website analysis (Claude Agent SDK)',
+    security: [['sanctum' => []]],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['website'],
+            properties: [
+                new OA\Property(property: 'website', type: 'string', example: 'https://example-gastro.de'),
+            ],
+        ),
+    ),
+    responses: [
+        new OA\Response(response: 200, description: 'Analysis finished (sync queue)'),
+        new OA\Response(response: 202, description: 'Analysis queued'),
+        new OA\Response(response: 422, description: 'Validation error'),
+    ],
+)]
+#[OA\Get(
+    path: '/admin/website-analyze/{websiteAnalyzeRun}',
+    operationId: 'adminWebsiteAnalyzeShow',
+    tags: ['Admin'],
+    summary: 'Poll website analysis run status',
+    security: [['sanctum' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'websiteAnalyzeRun',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'string', format: 'uuid'),
+        ),
+    ],
+    responses: [new OA\Response(response: 200, description: 'Run status and result when finished')],
 )]
 #[OA\Get(
     path: '/admin/ai-prompts',

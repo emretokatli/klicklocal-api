@@ -129,6 +129,24 @@ sudo cp /var/www/klicklocal/deploy/supervisor/klicklocal-worker-staging.conf  /e
 sudo supervisorctl reread && sudo supervisorctl update
 ```
 
+### Laravel scheduler (cron)
+
+Recurring jobs (`comments:sync`, `comments:classify`, `webanalyze:expire-stale`,
+and future trend-refresh jobs) are registered in `backend/routes/console.php`.
+They only run if the Laravel scheduler is invoked once a minute by system cron.
+
+Add **one** cron entry per environment (run `sudo crontab -u www-data -e`):
+
+```cron
+# Production
+* * * * * cd /var/www/klicklocal-api/backend && php artisan schedule:run >> /dev/null 2>&1
+
+# Staging
+* * * * * cd /var/www/klicklocal-api-staging/backend && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Verify with `php artisan schedule:list` (shows the registered jobs and next run).
+
 ## 7. Nginx (six vhosts)
 
 ```bash
@@ -189,6 +207,31 @@ Register both in the Meta app (see `docs/META-INSTAGRAM-SETUP.md`):
 https://api.klicklocal.app/api/v1/social-accounts/instagram/callback        (production)
 https://api-test.klicklocal.app/api/v1/social-accounts/instagram/callback   (staging)
 ```
+
+## Environment variables — WebAnalyze lead report
+
+The admin lead-report pipeline (`/admin/website-analyze`) supports three drivers.
+The **code-first** driver gathers all website/social data in PHP and makes a single
+Anthropic call per run (~$0.03, ~15 s) — use it in production.
+
+```
+# WebAnalyze code-first driver (recommended)
+WEBANALYZE_DRIVER=code_first
+WEBANALYZE_REPORT_MODEL=claude-haiku-4-5-20251001   # or claude-sonnet-4-6 for higher quality
+SERP_API_KEY=<your SerpAPI key>                      # https://serpapi.com — ~$50/month for 5000 searches
+SERP_DRIVER=api                                      # set to 'fake' for local dev without a key
+WEBANALYZE_CACHE_TTL_HOURS=168                       # 7 days; set to 0 to disable caching
+WEBANALYZE_CACHE_DRIVER=redis                        # must match CACHE_DRIVER or a named store
+
+# Old agent-based driver (still available, opt-in)
+# WEBANALYZE_DRIVER=api
+# WEBANALYZE_MAX_TURNS=20
+# WEBANALYZE_MAX_BUDGET_USD=1.25
+```
+
+`WEBANALYZE_DRIVER` defaults to `code_first` when `ANTHROPIC_API_KEY` is set, otherwise
+`fake` (deterministic placeholder report). The legacy Agent SDK runner is opt-in via
+`WEBANALYZE_DRIVER=api` and still requires Node.js + `backend/agent-sdk/`.
 
 ## Troubleshooting
 

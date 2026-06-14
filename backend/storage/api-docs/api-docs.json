@@ -1505,6 +1505,443 @@
                 ]
             }
         },
+        "/comments": {
+            "get": {
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "List comments in a workspace",
+                "description": "Comments are pulled from connected social accounts by the periodic sync. Sentiment is assigned asynchronously by the AI classifier (batched, German-aware); filter with `sentiment` once `sentiment_classified_at` is set.",
+                "operationId": "commentsIndex",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "platform",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "instagram",
+                                "tiktok",
+                                "facebook",
+                                "linkedin"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "sentiment",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "positive",
+                                "neutral",
+                                "negative"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 50,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Comment list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "comments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Comment"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "Create a comment manually",
+                "description": "If `sentiment` is provided it is stored as-is and marked classified (the AI sweep will not overwrite it). If omitted, sentiment defaults to neutral and the hourly AI classifier sweep assigns it.",
+                "operationId": "commentsStore",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "workspace_id",
+                                    "platform",
+                                    "author",
+                                    "text"
+                                ],
+                                "properties": {
+                                    "workspace_id": {
+                                        "type": "integer"
+                                    },
+                                    "platform": {
+                                        "type": "string",
+                                        "enum": [
+                                            "instagram",
+                                            "tiktok",
+                                            "facebook",
+                                            "linkedin"
+                                        ]
+                                    },
+                                    "author": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "text": {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                    },
+                                    "sentiment": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "positive",
+                                            "neutral",
+                                            "negative"
+                                        ]
+                                    },
+                                    "commented_at": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Comment created"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/comments/stats": {
+            "get": {
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "Sentiment counts for the workspace comments",
+                "description": "Counts comments per sentiment class, optionally restricted to one platform. Unclassified comments count as neutral (their stored default).",
+                "operationId": "commentsStats",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "platform",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "instagram",
+                                "tiktok",
+                                "facebook",
+                                "linkedin"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sentiment counts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "stats": {
+                                                    "properties": {
+                                                        "total": {
+                                                            "type": "integer",
+                                                            "example": 12
+                                                        },
+                                                        "positive": {
+                                                            "type": "integer",
+                                                            "example": 7
+                                                        },
+                                                        "neutral": {
+                                                            "type": "integer",
+                                                            "example": 3
+                                                        },
+                                                        "negative": {
+                                                            "type": "integer",
+                                                            "example": 2
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/comments/{comment}/suggest-reply": {
+            "post": {
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "Generate an AI reply suggestion for a comment",
+                "description": "Stores the suggestion on `suggested_reply` (regenerating overwrites it). Gated like /ai/generate: requires an active subscription (402 otherwise) and the `ai_generation` plan feature (403 otherwise).",
+                "operationId": "commentsSuggestReply",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "comment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Suggestion generated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "comment": {
+                                                    "$ref": "#/components/schemas/Comment"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "402": {
+                        "description": "No active subscription"
+                    },
+                    "403": {
+                        "description": "Plan lacks the ai_generation feature"
+                    },
+                    "404": {
+                        "description": "Comment not in this workspace"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/comments/{comment}/reply": {
+            "post": {
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "Reply to a comment",
+                "description": "Stores `reply_text` and `replied_at`. Only synced comments (with a provider `external_id`) can be answered; manually created comments are rejected with 422, as is a second reply.",
+                "operationId": "commentsReply",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    },
+                    {
+                        "name": "comment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "reply_text"
+                                ],
+                                "properties": {
+                                    "reply_text": {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reply stored",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "comment": {
+                                                    "$ref": "#/components/schemas/Comment"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Comment not in this workspace"
+                    },
+                    "422": {
+                        "description": "Manual comment, already replied, or validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
         "/media": {
             "get": {
                 "tags": [
@@ -3142,6 +3579,126 @@
                 ]
             }
         },
+        "/admin/website-analyze": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List past website analysis runs for the current admin",
+                "operationId": "adminWebsiteAnalyzeIndex",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 30,
+                            "maximum": 50
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Analysis run summaries (newest first)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Queue a business website analysis (Claude Agent SDK)",
+                "operationId": "adminWebsiteAnalyze",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "website"
+                                ],
+                                "properties": {
+                                    "website": {
+                                        "type": "string",
+                                        "example": "https://example-gastro.de"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Analysis finished (sync queue)"
+                    },
+                    "202": {
+                        "description": "Analysis queued"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/admin/website-analyze/{websiteAnalyzeRun}": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Poll website analysis run status",
+                "operationId": "adminWebsiteAnalyzeShow",
+                "parameters": [
+                    {
+                        "name": "websiteAnalyzeRun",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Run status and result when finished"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
         "/admin/ai-prompts": {
             "get": {
                 "tags": [
@@ -3882,6 +4439,76 @@
                 },
                 "type": "object"
             },
+            "Comment": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "workspace_id": {
+                        "type": "integer"
+                    },
+                    "post_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "platform": {
+                        "type": "string",
+                        "enum": [
+                            "instagram",
+                            "tiktok",
+                            "facebook",
+                            "linkedin"
+                        ]
+                    },
+                    "external_id": {
+                        "description": "Provider comment id (null for manually created comments)",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "author": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "sentiment": {
+                        "description": "Assigned asynchronously by the AI sentiment classifier after ingestion (defaults to neutral until classified).",
+                        "type": "string",
+                        "enum": [
+                            "positive",
+                            "neutral",
+                            "negative"
+                        ]
+                    },
+                    "sentiment_classified_at": {
+                        "description": "When the sentiment was classified (AI or explicit manual value). Null = not yet classified; such rows are swept hourly.",
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "commented_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "suggested_reply": {
+                        "description": "Last AI-generated reply suggestion (overwritten on regenerate).",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "reply_text": {
+                        "description": "The reply that was sent. Null until the comment is answered.",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "replied_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "AiGeneration": {
                 "properties": {
                     "id": {
@@ -4105,6 +4732,10 @@
         {
             "name": "Posts",
             "description": "Post CRUD, scheduling, and publishing"
+        },
+        {
+            "name": "Comments",
+            "description": "Synced social media comments with AI sentiment classification"
         },
         {
             "name": "Media",

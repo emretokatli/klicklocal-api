@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\Admin\TransactionController;
 use App\Http\Controllers\Api\V1\Admin\UsageController as AdminUsageController;
 use App\Http\Controllers\Api\V1\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
+use App\Http\Controllers\Api\V1\Admin\WebsiteAnalyzeController;
 use App\Http\Controllers\Api\V1\AiContentController;
 use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\CommentController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\QuotaTopupController;
 use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\BusinessProfileController;
+use App\Http\Controllers\Api\V1\ContentPlanController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\OnboardingController;
@@ -27,6 +29,7 @@ use App\Http\Controllers\Api\V1\RevenueCatWebhookController;
 use App\Http\Controllers\Api\V1\StripeWebhookController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TikTokSocialAccountController;
+use App\Http\Controllers\Api\V1\TrendController;
 use App\Http\Controllers\Api\V1\UsageController;
 use App\Http\Controllers\Api\V1\WebsiteAnalysisController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
@@ -65,6 +68,9 @@ Route::prefix('v1')->group(function (): void {
         Route::middleware('workspace.team')->group(function (): void {
             Route::get('workspaces/{workspace}/business-profile', [BusinessProfileController::class, 'show']);
             Route::put('workspaces/{workspace}/business-profile', [BusinessProfileController::class, 'update']);
+
+            // Website analysis (teaser/paywall handled server-side; no subscription required)
+            Route::get('business-profile/analysis', [BusinessProfileController::class, 'analysis']);
             Route::patch('workspaces/{workspace}/onboarding', [OnboardingController::class, 'update']);
 
             Route::post('ai/generate', [AiContentController::class, 'generate'])
@@ -102,12 +108,24 @@ Route::prefix('v1')->group(function (): void {
             Route::post('quota/topup', [QuotaTopupController::class, 'purchase'])
                 ->middleware('subscription.required');
 
-            // Comments (workspace scoped, no subscription required)
+            // Comments (workspace scoped; list/stats/reply need no subscription,
+            // the AI reply suggestion is gated like /ai/generate)
             Route::get('/comments', [CommentController::class, 'index']);
+            Route::get('/comments/stats', [CommentController::class, 'stats']);
             Route::post('/comments', [CommentController::class, 'store']);
+            Route::post('/comments/{comment}/suggest-reply', [CommentController::class, 'suggestReply'])
+                ->middleware(['subscription.required', 'feature.quota:ai_generation']);
+            Route::post('/comments/{comment}/reply', [CommentController::class, 'reply']);
 
             // Analytics (workspace scoped, no subscription required)
             Route::get('/analytics/kpi', [AnalyticsController::class, 'kpi']);
+
+            // Trends (workspace scoped, no subscription required)
+            Route::get('/trends', [TrendController::class, 'index']);
+
+            // Content planning layer (subscription required — unlocks the full experience)
+            Route::get('/content-plan/weekly', [ContentPlanController::class, 'weekly'])
+                ->middleware('subscription.required');
 
             Route::prefix('social-accounts/instagram')->group(function (): void {
                 Route::get('connect', [InstagramSocialAccountController::class, 'connect']);
@@ -148,6 +166,11 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('settings', [SettingController::class, 'index']);
             Route::put('settings', [SettingController::class, 'update']);
+
+            Route::get('website-analyze', [WebsiteAnalyzeController::class, 'index']);
+            Route::post('website-analyze', [WebsiteAnalyzeController::class, 'analyze'])
+                ->middleware('throttle:6,1');
+            Route::get('website-analyze/{websiteAnalyzeRun}', [WebsiteAnalyzeController::class, 'show']);
 
             Route::get('ai-prompts', [AiPromptController::class, 'index']);
             Route::post('ai-prompts', [AiPromptController::class, 'store']);

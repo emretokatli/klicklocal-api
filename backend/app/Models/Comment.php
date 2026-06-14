@@ -9,10 +9,15 @@ class Comment extends Model
 {
     protected $fillable = [
         'workspace_id', 'post_id', 'platform', 'external_id',
-        'author', 'text', 'sentiment', 'commented_at',
+        'author', 'text', 'sentiment', 'commented_at', 'sentiment_classified_at',
+        'suggested_reply', 'reply_text', 'replied_at',
     ];
 
-    protected $casts = ['commented_at' => 'datetime'];
+    protected $casts = [
+        'commented_at' => 'datetime',
+        'sentiment_classified_at' => 'datetime',
+        'replied_at' => 'datetime',
+    ];
 
     public function workspace(): BelongsTo
     {

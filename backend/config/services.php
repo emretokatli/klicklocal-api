@@ -18,6 +18,9 @@ return [
         'driver' => env('OPENAI_DRIVER', env('OPENAI_API_KEY') ? 'api' : 'fake'),
         'key' => env('OPENAI_API_KEY', ''),
         'model' => env('OPENAI_MODEL', 'gpt-5'),
+        // Cheap chat model for comment sentiment classification. Keep this
+        // separate from OPENAI_MODEL — sentiment runs in bulk on a schedule.
+        'sentiment_model' => env('OPENAI_SENTIMENT_MODEL', 'gpt-4o-mini'),
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
         'timeout' => (int) env('OPENAI_TIMEOUT', 60),
     ],

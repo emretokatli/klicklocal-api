@@ -83,4 +83,17 @@ class PostPlatform extends Model
             'published_at' => null,
         ]);
     }
+
+    /**
+     * Transient failure: keep the platform Pending so the next job attempt
+     * re-tries only this platform, while recording the last error.
+     */
+    public function markForRetry(string $reason): void
+    {
+        $this->update([
+            'status' => PostPlatformStatus::Pending,
+            'failure_reason' => $reason,
+            'published_at' => null,
+        ]);
+    }
 }

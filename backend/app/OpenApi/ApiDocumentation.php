@@ -617,6 +617,7 @@ use OpenApi\Attributes as OA;
                 new OA\Property(property: 'title', type: 'string', nullable: true),
                 new OA\Property(property: 'content', type: 'string', nullable: true),
                 new OA\Property(property: 'media_id', type: 'integer', nullable: true),
+                new OA\Property(property: 'metadata', type: 'object', nullable: true, description: 'Per-platform options (e.g. tiktok privacy/disclosure).'),
             ],
         ),
     ),
@@ -637,9 +638,15 @@ use OpenApi\Attributes as OA;
         content: new OA\JsonContent(
             required: ['platform', 'content'],
             properties: [
-                new OA\Property(property: 'platform', type: 'string', enum: ['instagram', 'tiktok']),
+                new OA\Property(property: 'platform', type: 'string', enum: ['instagram', 'tiktok', 'facebook']),
                 new OA\Property(property: 'content', type: 'string'),
                 new OA\Property(property: 'media_id', type: 'integer', nullable: true),
+                new OA\Property(
+                    property: 'options',
+                    type: 'object',
+                    nullable: true,
+                    description: 'Per-platform publish options, e.g. TikTok privacy_level and commercial content disclosure toggles.',
+                ),
             ],
         ),
     ),
@@ -647,6 +654,39 @@ use OpenApi\Attributes as OA;
         new OA\Response(response: 202, description: 'Queued for publishing'),
         new OA\Response(response: 402, description: 'Quota exceeded'),
         new OA\Response(response: 422, description: 'No connected account or validation error'),
+    ],
+)]
+#[OA\Post(
+    path: '/posts/schedule',
+    operationId: 'postsScheduleMulti',
+    tags: ['Posts'],
+    summary: 'Create and schedule the same content to multiple platforms',
+    description: 'Creates a post and schedules it to the given connected social accounts at a future time. Gated by an active subscription and the scheduled_posts_monthly quota. The publish job re-checks the plan quota at publish time and applies provider-specific retry/error handling (Instagram container timeout retries, Facebook token expiry marks the account expired, TikTok privacy constraints fail terminally).',
+    security: [['sanctum' => []]],
+    parameters: [new OA\Parameter(ref: '#/components/parameters/WorkspaceIdHeader')],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['content', 'scheduled_at', 'social_account_ids'],
+            properties: [
+                new OA\Property(property: 'content', type: 'string'),
+                new OA\Property(property: 'title', type: 'string', nullable: true),
+                new OA\Property(property: 'media_id', type: 'integer', nullable: true),
+                new OA\Property(property: 'scheduled_at', type: 'string', format: 'date-time', description: 'Must be in the future.'),
+                new OA\Property(
+                    property: 'social_account_ids',
+                    type: 'array',
+                    items: new OA\Items(type: 'integer'),
+                    description: 'Connected social account ids in this workspace to publish to.',
+                ),
+                new OA\Property(property: 'metadata', type: 'object', nullable: true, description: 'Per-platform options, e.g. {"tiktok": {"privacy_level": "SELF_ONLY"}}.'),
+            ],
+        ),
+    ),
+    responses: [
+        new OA\Response(response: 201, description: 'Scheduled to selected platforms'),
+        new OA\Response(response: 402, description: 'Subscription required / quota exceeded'),
+        new OA\Response(response: 422, description: 'Validation error'),
     ],
 )]
 #[OA\Get(
@@ -677,6 +717,7 @@ use OpenApi\Attributes as OA;
                 new OA\Property(property: 'title', type: 'string', nullable: true),
                 new OA\Property(property: 'content', type: 'string', nullable: true),
                 new OA\Property(property: 'media_id', type: 'integer', nullable: true),
+                new OA\Property(property: 'metadata', type: 'object', nullable: true, description: 'Per-platform options (e.g. tiktok privacy/disclosure).'),
             ],
         ),
     ),
@@ -1205,6 +1246,116 @@ use OpenApi\Attributes as OA;
     ],
     responses: [
         new OA\Response(response: 200, description: 'Connection status'),
+    ],
+)]
+#[OA\Get(
+    path: '/social-accounts/tiktok/creator-info',
+    operationId: 'tiktokCreatorInfo',
+    tags: ['Social Accounts'],
+    summary: 'TikTok creator info (privacy options for the post UI)',
+    description: 'Returns the privacy_level_options the creator may use plus the audit flag. While the app is unaudited (TIKTOK_AUDITED=false) only SELF_ONLY is offered, since unaudited apps may only create private posts.',
+    security: [['sanctum' => []]],
+    parameters: [
+        new OA\Parameter(name: 'workspace_id', in: 'query', required: true, schema: new OA\Schema(type: 'integer')),
+    ],
+    responses: [
+        new OA\Response(response: 200, description: 'Creator info + audited flag'),
+        new OA\Response(response: 404, description: 'No connected TikTok account'),
+        new OA\Response(response: 422, description: 'TikTok API error'),
+    ],
+)]
+// --- Social Accounts: Facebook Pages ---
+#[OA\Get(
+    path: '/social-accounts/facebook/connect',
+    operationId: 'facebookConnect',
+    tags: ['Social Accounts'],
+    summary: 'Start Facebook Login',
+    security: [['sanctum' => []]],
+    parameters: [
+        new OA\Parameter(name: 'workspace_id', in: 'query', required: true, schema: new OA\Schema(type: 'integer')),
+    ],
+    responses: [
+        new OA\Response(response: 200, description: 'Authorization URL'),
+        new OA\Response(response: 503, description: 'Facebook connection disabled'),
+    ],
+)]
+#[OA\Get(
+    path: '/social-accounts/facebook/callback',
+    operationId: 'facebookCallback',
+    tags: ['Social Accounts'],
+    summary: 'Facebook OAuth callback (redirect)',
+    description: 'Exchanges the code for a long-lived user token, then resolves a Page access token via /me/accounts and stores the first managed Page.',
+    parameters: [
+        new OA\Parameter(name: 'code', in: 'query', schema: new OA\Schema(type: 'string')),
+        new OA\Parameter(name: 'state', in: 'query', schema: new OA\Schema(type: 'string')),
+        new OA\Parameter(name: 'error', in: 'query', schema: new OA\Schema(type: 'string')),
+    ],
+    responses: [
+        new OA\Response(response: 302, description: 'Redirect to frontend'),
+    ],
+)]
+#[OA\Post(
+    path: '/social-accounts/facebook/disconnect',
+    operationId: 'facebookDisconnect',
+    tags: ['Social Accounts'],
+    summary: 'Disconnect Facebook account',
+    security: [['sanctum' => []]],
+    parameters: [
+        new OA\Parameter(name: 'workspace_id', in: 'query', required: true, schema: new OA\Schema(type: 'integer')),
+    ],
+    responses: [
+        new OA\Response(response: 200, description: 'Disconnected'),
+    ],
+)]
+#[OA\Get(
+    path: '/social-accounts/facebook/status',
+    operationId: 'facebookStatus',
+    tags: ['Social Accounts'],
+    summary: 'Facebook connection status',
+    security: [['sanctum' => []]],
+    parameters: [
+        new OA\Parameter(name: 'workspace_id', in: 'query', required: true, schema: new OA\Schema(type: 'integer')),
+    ],
+    responses: [
+        new OA\Response(response: 200, description: 'Connection status'),
+    ],
+)]
+// --- Social Content Analysis ---
+#[OA\Get(
+    path: '/social-analysis',
+    operationId: 'socialAnalysisIndex',
+    tags: ['Social Analysis'],
+    summary: 'List stored normalized content analyses',
+    security: [['sanctum' => []]],
+    parameters: [new OA\Parameter(ref: '#/components/parameters/WorkspaceIdHeader')],
+    responses: [
+        new OA\Response(response: 200, description: 'Analyzed media rows (engagement, reach, post type, hour)'),
+    ],
+)]
+#[OA\Post(
+    path: '/social-analysis/sync',
+    operationId: 'socialAnalysisSync',
+    tags: ['Social Analysis'],
+    summary: 'Fetch + normalize recent media/insights from connected accounts',
+    description: 'For each connected account that supports content analysis, fetches recent media and account insights, normalizes them (engagement, reach, post type, hour) and upserts into the analysis store (idempotent on external id).',
+    security: [['sanctum' => []]],
+    parameters: [new OA\Parameter(ref: '#/components/parameters/WorkspaceIdHeader')],
+    responses: [
+        new OA\Response(response: 200, description: 'Sync summary (synced count + per-account insights)'),
+    ],
+)]
+#[OA\Post(
+    path: '/social-analysis/content-plan',
+    operationId: 'socialAnalysisContentPlan',
+    tags: ['Social Analysis'],
+    summary: 'AI content-plan suggestion from analyzed data',
+    description: 'Aggregates the stored analytics and asks the AI (OPENAI_DRIVER=api) for a German content plan: summary, best posting times, recommended post types and content ideas. The fake driver returns German placeholders. Gated by subscription + ai_generation quota.',
+    security: [['sanctum' => []]],
+    parameters: [new OA\Parameter(ref: '#/components/parameters/WorkspaceIdHeader')],
+    responses: [
+        new OA\Response(response: 200, description: 'Content plan suggestion'),
+        new OA\Response(response: 402, description: 'Subscription required / quota exceeded'),
+        new OA\Response(response: 422, description: 'No analyzed content yet (run a sync first)'),
     ],
 )]
 // --- Admin ---

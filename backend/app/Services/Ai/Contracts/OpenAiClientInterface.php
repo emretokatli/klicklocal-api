@@ -2,6 +2,7 @@
 
 namespace App\Services\Ai\Contracts;
 
+use App\Services\Ai\DTOs\ContentPlanSuggestionDTO;
 use App\Services\Ai\DTOs\GeneratedContentDTO;
 use App\Services\Ai\DTOs\GeneratedImageDTO;
 use App\Services\Ai\DTOs\SentimentBatchDTO;
@@ -66,4 +67,18 @@ interface OpenAiClientInterface
      * @return array<int, string>  comment keyed by trend id
      */
     public function commentOnTrends(string $systemPrompt, array $trends, array $context = []): array;
+
+    /**
+     * Summarize normalized social analytics into a German content-plan
+     * suggestion (best posting times, recommended post types, content ideas) in
+     * one JSON-mode chat call. The fake driver returns German placeholders.
+     *
+     * @param  array<string, mixed>  $analytics  Aggregated/normalized analytics payload.
+     * @param  array<string, string>  $context    Business-profile context (for fake fallback / logging).
+     */
+    public function suggestContentPlan(
+        string $systemPrompt,
+        array $analytics,
+        array $context = [],
+    ): ContentPlanSuggestionDTO;
 }

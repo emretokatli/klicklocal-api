@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Support\SafeUrlFetcher;
+use GuzzleHttp\Middleware;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 use Tests\TestCase;
@@ -173,5 +174,83 @@ class SafeUrlFetcherTest extends TestCase
         }
 
         Http::assertNothingSent();
+    }
+
+    public function test_pins_connection_to_validated_ip_via_curl_resolve(): void
+    {
+        $history = [];
+        Http::globalMiddleware(Middleware::history($history));
+
+        Http::fake([
+            'https://example.de' => Http::response('<html><body>ok</body></html>', 200, [
+                'Content-Type' => 'text/html',
+            ]),
+        ]);
+
+        $this->fetcher(['example.de' => ['93.184.216.34']])->fetch('https://example.de');
+
+        $this->assertCount(1, $history);
+        $this->assertSame(
+            ['example.de:443:93.184.216.34'],
+            $history[0]['options']['curl'][CURLOPT_RESOLVE] ?? null,
+        );
+    }
+
+    public function test_rejects_hostname_resolving_to_loopback(): void
+    {
+        Http::fake();
+
+        $this->expectException(RuntimeException::class);
+
+        try {
+            $this->fetcher(['evil.example.de' => ['127.0.0.1']])
+                ->fetch('https://evil.example.de');
+        } finally {
+            Http::assertNothingSent();
+        }
+    }
+
+    public function test_rejects_hostname_resolving_to_ipv4_mapped_loopback(): void
+    {
+        Http::fake();
+
+        $this->expectException(RuntimeException::class);
+
+        try {
+            $this->fetcher(['mapped.example.de' => ['::ffff:127.0.0.1']])
+                ->fetch('https://mapped.example.de');
+        } finally {
+            Http::assertNothingSent();
+        }
+    }
+
+    public function test_each_redirect_hop_pins_its_own_validated_ip(): void
+    {
+        $history = [];
+        Http::globalMiddleware(Middleware::history($history));
+
+        Http::fake([
+            'https://old.example.de' => Http::response('', 301, [
+                'Location' => 'https://new.example.de/start',
+            ]),
+            'https://new.example.de/start' => Http::response('<html>Neu</html>', 200, [
+                'Content-Type' => 'text/html',
+            ]),
+        ]);
+
+        $this->fetcher([
+            'old.example.de' => ['93.184.216.34'],
+            'new.example.de' => ['93.184.216.35'],
+        ])->fetch('https://old.example.de');
+
+        $this->assertCount(2, $history);
+        $this->assertSame(
+            ['old.example.de:443:93.184.216.34'],
+            $history[0]['options']['curl'][CURLOPT_RESOLVE] ?? null,
+        );
+        $this->assertSame(
+            ['new.example.de:443:93.184.216.35'],
+            $history[1]['options']['curl'][CURLOPT_RESOLVE] ?? null,
+        );
     }
 }

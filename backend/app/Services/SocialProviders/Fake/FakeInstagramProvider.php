@@ -5,16 +5,19 @@ namespace App\Services\SocialProviders\Fake;
 use App\Models\Post;
 use App\Models\SocialAccount;
 use App\Services\SocialProviders\Base\BaseSocialProvider;
+use App\Services\SocialProviders\Contracts\AnalyzesContent;
 use App\Services\SocialProviders\Contracts\FetchesComments;
 use App\Services\SocialProviders\DTOs\CommentCollectionDTO;
 use App\Services\SocialProviders\DTOs\CommentDTO;
 use App\Services\SocialProviders\DTOs\PublishResponseDTO;
 use App\Services\SocialProviders\Fake\Concerns\SimulatesApiPublishing;
+use App\Services\SocialProviders\Fake\Concerns\SimulatesContentAnalysis;
 use Illuminate\Support\Carbon;
 
-class FakeInstagramProvider extends BaseSocialProvider implements FetchesComments
+class FakeInstagramProvider extends BaseSocialProvider implements FetchesComments, AnalyzesContent
 {
     use SimulatesApiPublishing;
+    use SimulatesContentAnalysis;
 
     /**
      * Demo comment pool: mixed positive / neutral / negative German wording.
@@ -91,7 +94,67 @@ class FakeInstagramProvider extends BaseSocialProvider implements FetchesComment
             'post_id' => $post->id,
         ]);
 
-        return $this->simulatePublish($post);
+        // Simulate three-step flow: create container → poll status → publish
+        return $this->simulatePublishFlow($post);
+    }
+
+    private function simulatePublishFlow(Post $post): PublishResponseDTO
+    {
+        $this->simulateNetworkDelay();
+
+        // Simulate container creation
+        $containerId = 'ig_container_'.bin2hex(random_bytes(8));
+        $this->logInfo('Container created (simulated)', [
+            'post_id' => $post->id,
+            'container_id' => $containerId,
+        ]);
+
+        // Simulate polling (0-1 attempts, then FINISHED)
+        $pollAttempts = mt_rand(0, 1);
+        for ($i = 0; $i < $pollAttempts; $i++) {
+            usleep(500000); // 0.5s
+        }
+        $this->logInfo('Container status FINISHED (simulated)', [
+            'post_id' => $post->id,
+            'container_id' => $containerId,
+            'poll_attempts' => $pollAttempts,
+        ]);
+
+        // Determine success or failure for final publish step
+        $successRate = (float) config('social_providers.fake.success_rate', 0.85);
+        $shouldSucceed = mt_rand(1, 100) <= (int) ($successRate * 100);
+
+        if ($shouldSucceed) {
+            $platformPostId = 'ig_post_'.bin2hex(random_bytes(8));
+            $this->logInfo('Published to Instagram (simulated)', [
+                'post_id' => $post->id,
+                'platform_post_id' => $platformPostId,
+                'latency_ms' => $this->lastDelayMs ?? null,
+            ]);
+
+            return $this->success(
+                $platformPostId,
+                'Simulated publish completed successfully.',
+                [
+                    'post_id' => $post->id,
+                    'container_id' => $containerId,
+                    'latency_ms' => $this->lastDelayMs ?? null,
+                ],
+            );
+        }
+
+        $this->logWarning('Publish failed (simulated)', [
+            'post_id' => $post->id,
+        ]);
+
+        return $this->failure(
+            'Simulated API error: rate limit or transient failure.',
+            [
+                'post_id' => $post->id,
+                'container_id' => $containerId,
+                'simulated_error' => true,
+            ],
+        );
     }
 
     /**

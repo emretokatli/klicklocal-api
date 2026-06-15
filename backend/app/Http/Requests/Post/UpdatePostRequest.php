@@ -20,6 +20,7 @@ class UpdatePostRequest extends FormRequest
             'title' => ['sometimes', 'nullable', 'string', 'max:255'],
             'content' => ['sometimes', 'nullable', 'string'],
             'media_id' => ['sometimes', 'nullable', 'integer', 'exists:media,id'],
+            'metadata' => ['sometimes', 'nullable', 'array'],
         ];
     }
 }

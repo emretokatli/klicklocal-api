@@ -4,12 +4,15 @@ namespace App\Services\SocialProviders\Fake;
 
 use App\Models\Post;
 use App\Services\SocialProviders\Base\BaseSocialProvider;
+use App\Services\SocialProviders\Contracts\AnalyzesContent;
 use App\Services\SocialProviders\DTOs\PublishResponseDTO;
 use App\Services\SocialProviders\Fake\Concerns\SimulatesApiPublishing;
+use App\Services\SocialProviders\Fake\Concerns\SimulatesContentAnalysis;
 
-class FakeFacebookProvider extends BaseSocialProvider
+class FakeFacebookProvider extends BaseSocialProvider implements AnalyzesContent
 {
     use SimulatesApiPublishing;
+    use SimulatesContentAnalysis;
 
     public function platform(): string
     {

@@ -270,4 +270,12 @@ class GarbageSentimentClient implements OpenAiClientInterface
     {
         throw new \RuntimeException('Not used in this test.');
     }
+
+    public function suggestContentPlan(
+        string $systemPrompt,
+        array $analytics,
+        array $context = [],
+    ): \App\Services\Ai\DTOs\ContentPlanSuggestionDTO {
+        throw new \RuntimeException('Not used in this test.');
+    }
 }

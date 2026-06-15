@@ -26,7 +26,6 @@ return [
     'scopes' => [
         'instagram_business_basic',
         'instagram_business_content_publish',
-        'instagram_business_manage_comments',
     ],
 
     'state_ttl_minutes' => (int) env('INSTAGRAM_STATE_TTL_MINUTES', 15),

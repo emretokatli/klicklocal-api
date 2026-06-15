@@ -3,11 +3,9 @@
 namespace App\Services\Post;
 
 use App\Contracts\Post\PostPublisherInterface;
-use App\Enums\PostPlatformStatus;
 use App\Models\Post;
 use App\Services\SocialProviders\PostPlatformPublishingService;
 use Illuminate\Support\Facades\Log;
-use Throwable;
 
 class PostPublishingService implements PostPublisherInterface
 {
@@ -25,30 +23,17 @@ class PostPublishingService implements PostPublisherInterface
             return;
         }
 
-        $hadFailure = false;
-        $hadSuccess = false;
+        // Only attempt platforms that are still pending. Already-published
+        // platforms are skipped so a job retry never republishes them; terminal
+        // failures stay Failed and are not retried. Transient failures are kept
+        // Pending (see PostPlatformPublishingService::markForRetry) and picked up
+        // on the next attempt. Post-level finalization is handled by the caller
+        // (PublishPostJob), which knows the retry count.
+        $pending = $post->platforms->filter(fn ($platform) => $platform->isPending());
 
-        foreach ($post->platforms as $platform) {
-            try {
-                $published = $this->platformPublisher->publishForPlatform($post, $platform);
-
-                if ($published) {
-                    $hadSuccess = true;
-                } else {
-                    $hadFailure = true;
-                }
-            } catch (Throwable $e) {
-                $hadFailure = true;
-
-                if ($platform->isPending()) {
-                    $platform->markAsFailed($e->getMessage());
-                }
-
-                throw $e;
-            }
+        foreach ($pending as $platform) {
+            $this->platformPublisher->publishForPlatform($post, $platform);
         }
-
-        $this->finalizePostStatus($post, $hadSuccess, $hadFailure);
     }
 
     private function publishWithoutPlatforms(Post $post): void
@@ -59,24 +44,5 @@ class PostPublishingService implements PostPublisherInterface
         ]);
 
         $post->markAsPublished();
-    }
-
-    private function finalizePostStatus(Post $post, bool $hadSuccess, bool $hadFailure): void
-    {
-        $post->refresh();
-
-        $publishedCount = $post->platforms()
-            ->where('status', PostPlatformStatus::Published)
-            ->count();
-
-        if ($publishedCount > 0) {
-            $post->markAsPublished();
-
-            return;
-        }
-
-        if ($hadFailure) {
-            $post->markAsFailed();
-        }
     }
 }

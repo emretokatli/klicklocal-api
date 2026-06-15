@@ -48,6 +48,7 @@ class PostService
             'title' => $data['title'] ?? null,
             'content' => $data['content'] ?? null,
             'media_id' => $data['media_id'] ?? null,
+            'metadata' => $data['metadata'] ?? null,
             'status' => PostStatus::Draft,
         ])->load(['user:id,name,email', 'media']);
     }
@@ -84,6 +85,7 @@ class PostService
             'title' => $data['title'] ?? $post->title,
             'content' => $data['content'] ?? $post->content,
             'media_id' => array_key_exists('media_id', $data) ? $data['media_id'] : $post->media_id,
+            'metadata' => array_key_exists('metadata', $data) ? $data['metadata'] : $post->metadata,
         ]);
 
         return $post->fresh(['user:id,name,email', 'platforms.socialAccount', 'media']);

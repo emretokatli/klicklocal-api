@@ -48,8 +48,10 @@ Route::prefix('v1')->group(function (): void {
     Route::post('webhooks/revenuecat', [RevenueCatWebhookController::class, 'handle'])
         ->middleware('revenuecat.webhook');
 
+    // Public AI-generating endpoint (runs before any account/subscription exists).
+    // Keep the per-IP limit strict to curb abuse of the OpenAI-backed analysis.
     Route::post('onboarding/analyze-website', [WebsiteAnalysisController::class, 'analyze'])
-        ->middleware('throttle:6,1');
+        ->middleware('throttle:4,1');
 
     Route::prefix('auth')->group(function (): void {
         Route::post('register', [AuthController::class, 'register']);

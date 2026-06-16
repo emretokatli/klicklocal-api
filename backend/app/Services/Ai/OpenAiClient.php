@@ -3,6 +3,7 @@
 namespace App\Services\Ai;
 
 use App\Services\Ai\Contracts\OpenAiClientInterface;
+use App\Services\Ai\DTOs\ContentPlanSuggestionDTO;
 use App\Services\Ai\DTOs\GeneratedContentDTO;
 use App\Services\Ai\DTOs\GeneratedImageDTO;
 use App\Services\Ai\DTOs\SentimentBatchDTO;
@@ -293,6 +294,107 @@ class OpenAiClient implements OpenAiClientInterface
         }
 
         return $comments;
+    }
+
+    public function suggestContentPlan(
+        string $systemPrompt,
+        array $analytics,
+        array $context = [],
+    ): ContentPlanSuggestionDTO {
+        if ($this->apiKey === '') {
+            throw ValidationException::withMessages([
+                'ai' => ['AI is not configured. Set OPENAI_API_KEY on the server.'],
+            ]);
+        }
+
+        $userPrompt = json_encode(
+            ['business' => $context, 'analytics' => $analytics],
+            JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR,
+        );
+
+        $response = Http::withToken($this->apiKey)
+            ->timeout($this->timeout)
+            ->acceptJson()
+            ->post(rtrim($this->baseUrl, '/').'/chat/completions', [
+                'model' => $this->model,
+                'response_format' => ['type' => 'json_object'],
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user', 'content' => $userPrompt],
+                ],
+            ]);
+
+        if ($response->failed()) {
+            \Illuminate\Support\Facades\Log::error('OpenAI suggestContentPlan failed', [
+                'status' => $response->status(),
+                'body'   => $response->json() ?? $response->body(),
+            ]);
+            throw ValidationException::withMessages([
+                'ai' => ['The AI provider returned an error. Please try again.'],
+            ]);
+        }
+
+        $payload = $response->json();
+        $content = data_get($payload, 'choices.0.message.content');
+        $parsed = is_string($content) ? json_decode($content, true) : null;
+
+        if (! is_array($parsed)) {
+            throw ValidationException::withMessages([
+                'ai' => ['The AI response could not be parsed. Please try again.'],
+            ]);
+        }
+
+        return new ContentPlanSuggestionDTO(
+            summary: (string) ($parsed['summary'] ?? ''),
+            bestTimes: $this->stringList($parsed['best_times'] ?? []),
+            recommendedPostTypes: $this->stringList($parsed['recommended_post_types'] ?? []),
+            contentIdeas: $this->normalizeIdeas($parsed['content_ideas'] ?? []),
+            model: (string) ($payload['model'] ?? $this->model),
+            tokensUsed: (int) data_get($payload, 'usage.total_tokens', 0),
+            raw: $parsed,
+        );
+    }
+
+    /**
+     * @param  mixed  $value
+     * @return list<string>
+     */
+    private function stringList(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            static fn ($v) => trim((string) $v),
+            $value,
+        ), static fn ($v) => $v !== ''));
+    }
+
+    /**
+     * @param  mixed  $value
+     * @return list<array{title: string, format: string, reason: string}>
+     */
+    private function normalizeIdeas(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $ideas = [];
+        foreach ($value as $idea) {
+            if (! is_array($idea)) {
+                continue;
+            }
+
+            $ideas[] = [
+                'title' => (string) ($idea['title'] ?? ''),
+                'format' => (string) ($idea['format'] ?? ''),
+                'reason' => (string) ($idea['reason'] ?? ''),
+            ];
+        }
+
+        return $ideas;
     }
 
     /**

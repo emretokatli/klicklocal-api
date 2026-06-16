@@ -3,6 +3,7 @@
 namespace App\Services\Ai;
 
 use App\Services\Ai\Contracts\OpenAiClientInterface;
+use App\Services\Ai\DTOs\ContentPlanSuggestionDTO;
 use App\Services\Ai\DTOs\GeneratedContentDTO;
 use App\Services\Ai\DTOs\GeneratedImageDTO;
 use App\Services\Ai\DTOs\SentimentBatchDTO;
@@ -131,6 +132,50 @@ class FakeOpenAiClient implements OpenAiClientInterface
         }
 
         return $comments;
+    }
+
+    public function suggestContentPlan(
+        string $systemPrompt,
+        array $analytics,
+        array $context = [],
+    ): ContentPlanSuggestionDTO {
+        $type = trim($context['business_type'] ?? '') !== '' ? $context['business_type'] : 'lokalen Betrieb';
+        $name = trim($context['business_name'] ?? '') !== '' ? $context['business_name'] : 'dein Unternehmen';
+
+        $bestType = (string) ($analytics['top_post_type'] ?? 'Reel');
+        $bestHour = $analytics['best_hour'] ?? 18;
+
+        return new ContentPlanSuggestionDTO(
+            summary: "Platzhalter-Analyse (OPENAI_DRIVER=fake): Basierend auf den bisherigen Beiträgen von "
+                ."{$name} erzielen {$bestType}-Inhalte die beste Interaktion. Veröffentliche regelmäßig "
+                ."und konzentriere dich auf lokale Themen rund um deinen {$type}.",
+            bestTimes: [
+                "Werktags um {$bestHour}:00 Uhr",
+                'Samstag um 11:00 Uhr',
+                'Sonntag um 19:00 Uhr',
+            ],
+            recommendedPostTypes: [$bestType, 'Karussell', 'Story'],
+            contentIdeas: [
+                [
+                    'title' => 'Hinter den Kulissen',
+                    'format' => 'Reel',
+                    'reason' => 'Authentische Einblicke schaffen lokale Nähe und Vertrauen.',
+                ],
+                [
+                    'title' => 'Kundenstimme der Woche',
+                    'format' => 'Karussell',
+                    'reason' => 'Social Proof steigert die Glaubwürdigkeit deines Angebots.',
+                ],
+                [
+                    'title' => 'Angebot des Tages',
+                    'format' => 'Story',
+                    'reason' => 'Zeitlich begrenzte Angebote erhöhen die Interaktion und Besuche.',
+                ],
+            ],
+            model: 'fake-gpt-5',
+            tokensUsed: 0,
+            raw: ['fake' => true, 'analytics' => $analytics],
+        );
     }
 
     /**

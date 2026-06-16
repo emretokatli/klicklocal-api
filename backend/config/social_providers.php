@@ -3,6 +3,7 @@
 use App\Services\SocialProviders\Fake\FakeFacebookProvider;
 use App\Services\SocialProviders\Fake\FakeInstagramProvider;
 use App\Services\SocialProviders\Fake\FakeLinkedInProvider;
+use App\Services\SocialProviders\Fake\FakeTikTokProvider;
 
 return [
 
@@ -15,6 +16,7 @@ return [
         'facebook' => env('SOCIAL_FACEBOOK_DRIVER', 'fake'),
         'instagram' => env('SOCIAL_INSTAGRAM_DRIVER', 'fake'),
         'linkedin' => env('SOCIAL_LINKEDIN_DRIVER', 'fake'),
+        'tiktok' => env('SOCIAL_TIKTOK_DRIVER', 'fake'),
     ],
 
     /*
@@ -27,9 +29,12 @@ return [
             'facebook' => FakeFacebookProvider::class,
             'instagram' => FakeInstagramProvider::class,
             'linkedin' => FakeLinkedInProvider::class,
+            'tiktok' => FakeTikTokProvider::class,
         ],
         'api' => [
             'instagram' => \App\Services\SocialProviders\Instagram\InstagramProvider::class,
+            'facebook' => \App\Services\SocialProviders\Facebook\FacebookProvider::class,
+            'tiktok' => \App\Services\SocialProviders\TikTok\TikTokProvider::class,
             // 'linkedin' => \App\Services\SocialProviders\LinkedIn\LinkedInApiProvider::class,
         ],
     ],
@@ -54,8 +59,7 @@ return [
         'facebook' => ['publish', 'refresh_token', 'validate_account'],
         'instagram' => ['publish', 'refresh_token', 'validate_account', 'fetch_comments'],
         'linkedin' => ['publish', 'refresh_token', 'validate_account'],
-        // TODO(tiktok): add 'fetch_comments' once a TikTok provider implements
-        // App\Services\SocialProviders\Contracts\FetchesComments.
+        'tiktok' => ['publish', 'refresh_token', 'validate_account'],
     ],
 
 ];

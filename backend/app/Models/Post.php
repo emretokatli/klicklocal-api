@@ -26,6 +26,7 @@ class Post extends Model
         'title',
         'content',
         'media_id',
+        'metadata',
         'status',
         'scheduled_at',
         'published_at',
@@ -35,6 +36,7 @@ class Post extends Model
     {
         return [
             'status' => PostStatus::class,
+            'metadata' => 'array',
             'scheduled_at' => 'datetime',
             'published_at' => 'datetime',
         ];

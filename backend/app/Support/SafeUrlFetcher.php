@@ -38,11 +38,26 @@ class SafeUrlFetcher
         $current = $url;
 
         for ($hop = 0; $hop <= self::MAX_REDIRECTS; $hop++) {
-            $this->assertSafeUrl($current);
+            $ips = $this->assertSafeUrl($current);
+
+            $parts = parse_url($current);
+            $scheme = strtolower($parts['scheme'] ?? 'https');
+            $host = strtolower(trim((string) ($parts['host'] ?? ''), '[]'));
+            $port = (int) ($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
+            $ip = $ips[0];
 
             $response = Http::withHeaders($headers)
                 ->timeout($timeout)
-                ->withOptions(['allow_redirects' => false])
+                ->withOptions([
+                    'allow_redirects' => false,
+                    // Pin the connection to the IP we just validated so cURL does
+                    // not re-resolve the hostname (DNS rebinding / TOCTOU). The
+                    // hostname is kept for the Host header and TLS SNI, so
+                    // certificate verification still applies.
+                    'curl' => [
+                        CURLOPT_RESOLVE => ["{$host}:{$port}:{$ip}"],
+                    ],
+                ])
                 ->get($current);
 
             if ($response->redirect()) {
@@ -69,7 +84,10 @@ class SafeUrlFetcher
         throw new RuntimeException('Too many redirects.');
     }
 
-    private function assertSafeUrl(string $url): void
+    /**
+     * @return list<string> the validated (public) IPs the host resolves to
+     */
+    private function assertSafeUrl(string $url): array
     {
         $parts = parse_url($url);
 
@@ -95,11 +113,15 @@ class SafeUrlFetcher
 
         $host = strtolower(trim($parts['host'], '[]'));
 
-        foreach ($this->resolveHost($host) as $ip) {
+        $ips = $this->resolveHost($host);
+
+        foreach ($ips as $ip) {
             if (! $this->isPublicIp($ip)) {
                 throw new RuntimeException('URL resolves to a non-public address.');
             }
         }
+
+        return $ips;
     }
 
     /**
@@ -134,11 +156,31 @@ class SafeUrlFetcher
     {
         // NO_PRIV_RANGE: 10/8, 172.16/12, 192.168/16, fc00::/7
         // NO_RES_RANGE: 0/8, 127/8, 169.254/16, 240/4, ::1, ::, ::ffff:0:0/96, fe80::/10
-        return filter_var(
+        if (filter_var(
             $ip,
             FILTER_VALIDATE_IP,
             FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
-        ) !== false;
+        ) === false) {
+            return false;
+        }
+
+        // Defence in depth for IPv4-mapped IPv6 (e.g. ::ffff:127.0.0.1 and the
+        // hex form ::ffff:7f00:1): decode the embedded IPv4 and re-check it,
+        // since the filter validates the v6 form as a single opaque unit.
+        $packed = @inet_pton($ip);
+
+        if ($packed !== false && strlen($packed) === 16
+            && substr($packed, 0, 12) === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff") {
+            $embedded = inet_ntop(substr($packed, 12, 4));
+
+            return $embedded !== false && filter_var(
+                $embedded,
+                FILTER_VALIDATE_IP,
+                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
+            ) !== false;
+        }
+
+        return true;
     }
 
     private function resolveRedirectTarget(string $current, string $location): string

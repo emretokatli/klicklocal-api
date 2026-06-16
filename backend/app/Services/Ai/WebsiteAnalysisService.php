@@ -51,8 +51,20 @@ You analyze local business websites for onboarding. Respond ONLY with valid JSON
 - unique_value_proposition: what makes the business unique vs competitors (German)
 - additional_notes: optional extra context about goals or brand (German, can be short)
 - city: city/location if clearly found on the website, else null
+- sample_posts: an array of EXACTLY 3 ready-to-publish Instagram posts for THIS business.
+  Each item is an object with:
+    - caption: an engaging German caption (1-3 short sentences, may use emojis) that is
+      specific to this business — reference its real services, menu items, products, or
+      city as found in the website content. NEVER write generic filler that could apply
+      to any business.
+    - hashtags: array of 4-8 relevant German/local hashtags, each starting with "#"
+    - suggested_image_idea: one short German sentence describing a photo/visual to pair
+      with the caption.
 
-Write in German. Be concise and practical for social media marketing.
+First infer the brand's tone of voice from the website content (e.g. casual, premium,
+playful, professional) and write all 3 captions in that same tone. Use the business name,
+its industry/branche, and concrete details scraped from the site. Write everything in
+German. Be concise and practical for social media marketing.
 PROMPT;
 
         $userPrompt = collect([
@@ -98,6 +110,7 @@ PROMPT;
             city: filled($parsed['city'] ?? null) ? (string) $parsed['city'] : null,
             model: (string) ($payload['model'] ?? $this->model),
             tokensUsed: (int) data_get($payload, 'usage.total_tokens', 0),
+            samplePosts: WebsiteAnalysisDTO::normalizeSamplePosts($parsed['sample_posts'] ?? null),
         );
     }
 
@@ -303,6 +316,43 @@ PROMPT;
             city: null,
             model: 'fake-gpt-5',
             tokensUsed: 0,
+            samplePosts: $this->fakeSamplePosts($name, $industry),
         );
+    }
+
+    /**
+     * Deterministic but convincing German sample posts for OPENAI_DRIVER=fake.
+     *
+     * @return list<array{caption: string, hashtags: list<string>, suggested_image_idea: string}>
+     */
+    private function fakeSamplePosts(string $name, string $industry): array
+    {
+        return [
+            [
+                'caption' => "✨ Willkommen bei {$name}! Wir sind dein Partner für {$industry} in der Region. "
+                    .'Schau vorbei und überzeuge dich selbst – wir freuen uns auf dich!',
+                'hashtags' => ['#'.$this->slugTag($name), '#'.$this->slugTag($industry), '#lokal', '#ausderregion', '#kleinunternehmen'],
+                'suggested_image_idea' => 'Ein einladendes Foto vom Team oder von deinem Geschäft bei Tageslicht.',
+            ],
+            [
+                'caption' => "📍 Schon gewusst? Bei {$name} bekommst du persönliche Beratung und Qualität, "
+                    ."auf die du dich verlassen kannst. Dein {$industry}-Spezialist vor Ort.",
+                'hashtags' => ['#'.$this->slugTag($name), '#service', '#qualität', '#'.$this->slugTag($industry), '#nachbarschaft'],
+                'suggested_image_idea' => 'Detailaufnahme eines Produkts oder einer Dienstleistung in Aktion.',
+            ],
+            [
+                'caption' => "💬 Deine Meinung zählt! Erzähl uns, was du dir von {$name} wünschst – "
+                    .'wir hören zu und werden jeden Tag ein Stück besser. Bis bald! 🙌',
+                'hashtags' => ['#'.$this->slugTag($name), '#feedback', '#community', '#'.$this->slugTag($industry), '#supportlocal'],
+                'suggested_image_idea' => 'Eine zufriedene Kundin oder ein zufriedener Kunde mit deinem Angebot.',
+            ],
+        ];
+    }
+
+    private function slugTag(string $value): string
+    {
+        $slug = Str::of($value)->ascii()->replaceMatches('/[^A-Za-z0-9]/', '')->toString();
+
+        return $slug !== '' ? $slug : 'klicklocal';
     }
 }

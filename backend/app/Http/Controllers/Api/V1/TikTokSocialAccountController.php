@@ -7,9 +7,11 @@ use App\Http\Responses\ApiResponse;
 use App\Models\SocialAccount;
 use App\Models\Workspace;
 use App\Services\Authorization\AuthorizationService;
+use App\Services\SocialProviders\Exceptions\SocialProviderException;
 use App\Services\SocialProviders\TikTok\Exceptions\TikTokOAuthException;
 use App\Services\SocialProviders\TikTok\TikTokOAuthService;
 use App\Services\SocialProviders\TikTok\TikTokProviderSettingsService;
+use App\Services\SocialProviders\TikTok\TikTokPublishingService;
 use App\Services\SocialProviders\TikTok\TikTokService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +26,7 @@ class TikTokSocialAccountController extends Controller
         private readonly TikTokService $tiktokService,
         private readonly TikTokOAuthService $oauth,
         private readonly TikTokProviderSettingsService $providerSettings,
+        private readonly TikTokPublishingService $publishing,
         private readonly AuthorizationService $authorization,
     ) {}
 
@@ -161,6 +164,59 @@ class TikTokSocialAccountController extends Controller
             'connected' => $dto !== null && $dto->status->value === 'connected',
             'account' => $dto?->toArray(),
         ]);
+    }
+
+    #[OA\Get(
+        path: '/social-accounts/tiktok/creator-info',
+        summary: 'TikTok creator info (privacy options for the post UI)',
+        security: [['sanctum' => []]],
+        tags: ['Social Accounts'],
+        parameters: [
+            new OA\Parameter(name: 'workspace_id', in: 'query', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Creator info + audit flag'),
+        ],
+    )]
+    public function creatorInfo(Request $request): JsonResponse
+    {
+        $workspace = $this->resolveWorkspace($request);
+        Gate::authorize('viewStatus', [SocialAccount::class, $workspace]);
+
+        $account = $this->tiktokService->findTikTokAccount($workspace);
+
+        if ($account === null || $account->status->value !== 'connected') {
+            return ApiResponse::error('No connected TikTok account found.', 404);
+        }
+
+        $audited = (bool) config('tiktok.audited', false);
+
+        // While unaudited, posts are forced to SELF_ONLY — surface only that
+        // option so the UI cannot offer a privacy level TikTok will reject.
+        if (! $audited) {
+            return ApiResponse::success([
+                'audited' => false,
+                'creator_info' => [
+                    'privacy_level_options' => [TikTokPublishingService::PRIVACY_SELF_ONLY],
+                    'comment_disabled' => false,
+                    'duet_disabled' => false,
+                    'stitch_disabled' => false,
+                ],
+            ]);
+        }
+
+        try {
+            $info = $this->publishing->queryCreatorInfo($account);
+
+            return ApiResponse::success([
+                'audited' => true,
+                'creator_info' => $info->toArray(),
+            ]);
+        } catch (SocialProviderException $e) {
+            Log::error('TikTok creator info failed', ['message' => $e->getMessage()]);
+
+            return ApiResponse::error($e->getMessage(), 422);
+        }
     }
 
     private function resolveWorkspace(Request $request): Workspace

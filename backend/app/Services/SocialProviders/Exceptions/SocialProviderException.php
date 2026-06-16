@@ -35,4 +35,9 @@ class SocialProviderException extends Exception
     {
         return new self("{$platform} configuration error: {$reason}");
     }
+
+    public static function quotaExceeded(string $platform, string $reason): self
+    {
+        return new self("{$platform} quota exceeded: {$reason}");
+    }
 }

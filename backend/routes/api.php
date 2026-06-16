@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\Admin\UsageController as AdminUsageController;
 use App\Http\Controllers\Api\V1\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Admin\WebsiteAnalyzeController;
+use App\Http\Controllers\Api\V1\FacebookSocialAccountController;
 use App\Http\Controllers\Api\V1\AiContentController;
 use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\CommentController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\RevenueCatWebhookController;
+use App\Http\Controllers\Api\V1\SocialContentAnalysisController;
 use App\Http\Controllers\Api\V1\StripeWebhookController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TikTokSocialAccountController;
@@ -38,6 +40,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function (): void {
     Route::get('social-accounts/instagram/callback', [InstagramSocialAccountController::class, 'callback']);
     Route::get('social-accounts/tiktok/callback', [TikTokSocialAccountController::class, 'callback']);
+    Route::get('social-accounts/facebook/callback', [FacebookSocialAccountController::class, 'callback']);
 
     Route::post('webhooks/stripe', [StripeWebhookController::class, 'handle'])
         ->middleware('stripe.webhook');
@@ -45,8 +48,10 @@ Route::prefix('v1')->group(function (): void {
     Route::post('webhooks/revenuecat', [RevenueCatWebhookController::class, 'handle'])
         ->middleware('revenuecat.webhook');
 
+    // Public AI-generating endpoint (runs before any account/subscription exists).
+    // Keep the per-IP limit strict to curb abuse of the OpenAI-backed analysis.
     Route::post('onboarding/analyze-website', [WebsiteAnalysisController::class, 'analyze'])
-        ->middleware('throttle:6,1');
+        ->middleware('throttle:4,1');
 
     Route::prefix('auth')->group(function (): void {
         Route::post('register', [AuthController::class, 'register']);
@@ -83,6 +88,8 @@ Route::prefix('v1')->group(function (): void {
             Route::get('posts/{post}', [PostController::class, 'show']);
             Route::middleware('subscription.required')->group(function (): void {
                 Route::post('posts/quick-publish', [PostController::class, 'quickPublish'])
+                    ->middleware('feature.quota:scheduled_posts_monthly');
+                Route::post('posts/schedule', [PostController::class, 'scheduleMulti'])
                     ->middleware('feature.quota:scheduled_posts_monthly');
                 Route::post('posts', [PostController::class, 'store']);
                 Route::put('posts/{post}', [PostController::class, 'update']);
@@ -137,7 +144,21 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('connect', [TikTokSocialAccountController::class, 'connect']);
                 Route::post('disconnect', [TikTokSocialAccountController::class, 'disconnect']);
                 Route::get('status', [TikTokSocialAccountController::class, 'status']);
+                Route::get('creator-info', [TikTokSocialAccountController::class, 'creatorInfo']);
             });
+
+            Route::prefix('social-accounts/facebook')->group(function (): void {
+                Route::get('connect', [FacebookSocialAccountController::class, 'connect']);
+                Route::post('disconnect', [FacebookSocialAccountController::class, 'disconnect']);
+                Route::get('status', [FacebookSocialAccountController::class, 'status']);
+            });
+
+            // Social content analysis (sync + list need no subscription;
+            // the AI content-plan suggestion is gated like /ai/generate).
+            Route::get('social-analysis', [SocialContentAnalysisController::class, 'index']);
+            Route::post('social-analysis/sync', [SocialContentAnalysisController::class, 'sync']);
+            Route::post('social-analysis/content-plan', [SocialContentAnalysisController::class, 'contentPlan'])
+                ->middleware(['subscription.required', 'feature.quota:ai_generation']);
         });
     });
 

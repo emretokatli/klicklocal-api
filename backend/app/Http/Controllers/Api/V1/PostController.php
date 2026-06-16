@@ -137,18 +137,66 @@ class PostController extends Controller
         );
     }
 
+    /**
+     * Create a post and schedule the same content to multiple platforms in one
+     * call (calendar multi-platform scheduling). Gated by subscription +
+     * scheduled_posts_monthly quota via route middleware.
+     */
+    public function scheduleMulti(Request $request, SchedulePostAction $schedulePost): JsonResponse
+    {
+        $workspace = $request->attributes->get('workspace');
+
+        $validated = $request->validate([
+            'content' => ['required', 'string'],
+            'title' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'media_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('media', 'id')->where('workspace_id', $workspace->id),
+            ],
+            'scheduled_at' => ['required', 'date', 'after:now'],
+            'social_account_ids' => ['required', 'array', 'min:1'],
+            'social_account_ids.*' => [
+                'integer',
+                Rule::exists('social_accounts', 'id')->where('workspace_id', $workspace->id),
+            ],
+            'metadata' => ['sometimes', 'nullable', 'array'],
+        ]);
+
+        $post = $this->postService->create($request->user(), $workspace->id, [
+            'title' => $validated['title'] ?? null,
+            'content' => $validated['content'],
+            'media_id' => $validated['media_id'] ?? null,
+            'metadata' => $validated['metadata'] ?? null,
+        ]);
+
+        $scheduled = $schedulePost->execute($request->user(), $post, [
+            'scheduled_at' => $validated['scheduled_at'],
+            'social_account_ids' => $validated['social_account_ids'],
+        ]);
+
+        return ApiResponse::success(
+            ['post' => $scheduled],
+            'Post scheduled to selected platforms.',
+            201,
+        );
+    }
+
     public function quickPublish(Request $request): JsonResponse
     {
         $workspace = $request->attributes->get('workspace');
 
         $validated = $request->validate([
-            'platform' => ['required', 'string', 'in:instagram,tiktok'],
+            'platform' => ['required', 'string', 'in:instagram,tiktok,facebook'],
             'content' => ['required', 'string'],
             'media_id' => [
                 'nullable',
                 'integer',
                 Rule::exists('media', 'id')->where('workspace_id', $workspace->id),
             ],
+            // Per-platform publish options, e.g. TikTok privacy_level and
+            // commercial content disclosure toggles.
+            'options' => ['sometimes', 'nullable', 'array'],
         ]);
 
         $account = SocialAccount::query()
@@ -163,11 +211,17 @@ class PostController extends Controller
             ]);
         }
 
+        $metadata = null;
+        if (! empty($validated['options'])) {
+            $metadata = [$validated['platform'] => $validated['options']];
+        }
+
         $post = Post::create([
             'workspace_id' => $workspace->id,
             'user_id' => $request->user()->id,
             'content' => $validated['content'],
             'media_id' => $validated['media_id'] ?? null,
+            'metadata' => $metadata,
             'status' => PostStatus::Scheduled,
             'scheduled_at' => now(),
         ]);

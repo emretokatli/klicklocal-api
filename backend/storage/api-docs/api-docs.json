@@ -1172,6 +1172,11 @@
                                     "media_id": {
                                         "type": "integer",
                                         "nullable": true
+                                    },
+                                    "metadata": {
+                                        "description": "Per-platform options (e.g. tiktok privacy/disclosure).",
+                                        "type": "object",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -1226,7 +1231,8 @@
                                         "type": "string",
                                         "enum": [
                                             "instagram",
-                                            "tiktok"
+                                            "tiktok",
+                                            "facebook"
                                         ]
                                     },
                                     "content": {
@@ -1234,6 +1240,11 @@
                                     },
                                     "media_id": {
                                         "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "options": {
+                                        "description": "Per-platform publish options, e.g. TikTok privacy_level and commercial content disclosure toggles.",
+                                        "type": "object",
                                         "nullable": true
                                     }
                                 },
@@ -1251,6 +1262,88 @@
                     },
                     "422": {
                         "description": "No connected account or validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/posts/schedule": {
+            "post": {
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Create and schedule the same content to multiple platforms",
+                "description": "Creates a post and schedules it to the given connected social accounts at a future time. Gated by an active subscription and the scheduled_posts_monthly quota. The publish job re-checks the plan quota at publish time and applies provider-specific retry/error handling (Instagram container timeout retries, Facebook token expiry marks the account expired, TikTok privacy constraints fail terminally).",
+                "operationId": "postsScheduleMulti",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "content",
+                                    "scheduled_at",
+                                    "social_account_ids"
+                                ],
+                                "properties": {
+                                    "content": {
+                                        "type": "string"
+                                    },
+                                    "title": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "media_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "scheduled_at": {
+                                        "description": "Must be in the future.",
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "social_account_ids": {
+                                        "description": "Connected social account ids in this workspace to publish to.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "metadata": {
+                                        "description": "Per-platform options, e.g. {\"tiktok\": {\"privacy_level\": \"SELF_ONLY\"}}.",
+                                        "type": "object",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Scheduled to selected platforms"
+                    },
+                    "402": {
+                        "description": "Subscription required / quota exceeded"
+                    },
+                    "422": {
+                        "description": "Validation error"
                     }
                 },
                 "security": [
@@ -1331,6 +1424,11 @@
                                     },
                                     "media_id": {
                                         "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "metadata": {
+                                        "description": "Per-platform options (e.g. tiktok privacy/disclosure).",
+                                        "type": "object",
                                         "nullable": true
                                     }
                                 },
@@ -2695,6 +2793,298 @@
                 "responses": {
                     "200": {
                         "description": "Connection status"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/tiktok/creator-info": {
+            "get": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "TikTok creator info (privacy options for the post UI)",
+                "description": "Returns the privacy_level_options the creator may use plus the audit flag. While the app is unaudited (TIKTOK_AUDITED=false) only SELF_ONLY is offered, since unaudited apps may only create private posts.",
+                "operationId": "tiktokCreatorInfo",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Creator info + audited flag"
+                    },
+                    "404": {
+                        "description": "No connected TikTok account"
+                    },
+                    "422": {
+                        "description": "TikTok API error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/facebook/connect": {
+            "get": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "Start Facebook Login",
+                "operationId": "facebookConnect",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authorization URL"
+                    },
+                    "503": {
+                        "description": "Facebook connection disabled"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/facebook/callback": {
+            "get": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "Facebook OAuth callback (redirect)",
+                "description": "Exchanges the code for a long-lived user token, then resolves a Page access token via /me/accounts and stores the first managed Page.",
+                "operationId": "facebookCallback",
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "error",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to frontend"
+                    }
+                },
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/facebook/disconnect": {
+            "post": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "Disconnect Facebook account",
+                "operationId": "facebookDisconnect",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Disconnected"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-accounts/facebook/status": {
+            "get": {
+                "tags": [
+                    "Social Accounts"
+                ],
+                "summary": "Facebook connection status",
+                "operationId": "facebookStatus",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connection status"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-analysis": {
+            "get": {
+                "tags": [
+                    "Social Analysis"
+                ],
+                "summary": "List stored normalized content analyses",
+                "operationId": "socialAnalysisIndex",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Analyzed media rows (engagement, reach, post type, hour)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-analysis/sync": {
+            "post": {
+                "tags": [
+                    "Social Analysis"
+                ],
+                "summary": "Fetch + normalize recent media/insights from connected accounts",
+                "description": "For each connected account that supports content analysis, fetches recent media and account insights, normalizes them (engagement, reach, post type, hour) and upserts into the analysis store (idempotent on external id).",
+                "operationId": "socialAnalysisSync",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sync summary (synced count + per-account insights)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ],
+                "servers": [
+                    {
+                        "url": "http://localhost:1981/klicklocal/backend/public/api/v1",
+                        "description": "API v1 base URL"
+                    }
+                ]
+            }
+        },
+        "/social-analysis/content-plan": {
+            "post": {
+                "tags": [
+                    "Social Analysis"
+                ],
+                "summary": "AI content-plan suggestion from analyzed data",
+                "description": "Aggregates the stored analytics and asks the AI (OPENAI_DRIVER=api) for a German content plan: summary, best posting times, recommended post types and content ideas. The fake driver returns German placeholders. Gated by subscription + ai_generation quota.",
+                "operationId": "socialAnalysisContentPlan",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/WorkspaceIdHeader"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content plan suggestion"
+                    },
+                    "402": {
+                        "description": "Subscription required / quota exceeded"
+                    },
+                    "422": {
+                        "description": "No analyzed content yet (run a sync first)"
                     }
                 },
                 "security": [
@@ -4756,6 +5146,10 @@
         {
             "name": "Admin",
             "description": "Platform administration (requires platform admin role)"
+        },
+        {
+            "name": "Social Analysis",
+            "description": "Social Analysis"
         }
     ]
 }
